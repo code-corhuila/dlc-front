@@ -69,7 +69,7 @@ dlc-front/
 
 ## Issue #1 and methodology
 
-The project owner supplied the scope of dlc-front Issue #1:
+The project owner supplied the scope of [dlc-front Issue #1](https://github.com/code-corhuila/dlc-front/issues/1):
 "Provide shared session and HTTP-client integration for the IAM remote."
 The session, HTTP and integration directories reserve that responsibility for
 future work. Issue #1 and HU-IAM-001 remain unimplemented by this increment.
@@ -93,15 +93,18 @@ definition and verification. Deployment details also require specification.
 These are integration concerns, not a framework-selection task for dlc-front.
 No endpoints, events, storage mechanism or Angular/React adapter are defined here.
 
-The canonical story is HU-IAM-001. A HU-04 alias was not found in the reviewed
-documentation; no equivalence is asserted. Structure alone cannot complete the
-story, Issue #1 or the project's Definition of Done.
+[Staff sign-in, dlc-docs #47](https://github.com/code-corhuila/dlc-docs/issues/47)
+identifies HU-04 as the global backlog ID and HU-IAM-001 as the technical ID
+of the same story, as confirmed by the issue text supplied by the project owner.
+Issue #1 requires functional integration and evidence, with dependencies on
+HU-IAM-005 (mandatory MFA) and HU-IAM-006 (durable sessions). This structural
+increment does not satisfy those acceptance criteria or close either issue.
 
 ## Documentation references
 
-Paths below belong to the canonical documentation repository (`ods-docs`):
+Paths below belong to the canonical documentation repository (`code-corhuila/dlc-docs`):
 
-- `05-architecture/decisions/ADR-011-transversal-frontend-composition.md`
+- [ADR-011: composition and portal technologies](https://github.com/code-corhuila/dlc-docs/blob/main/05-architecture/decisions/ADR-011-transversal-frontend-composition.md)
 - `05-architecture/hexagonal-architecture.md`
 - `09-microservices/transversal-repositories.md`
 - `04-requirements/traceability-matrix.md`

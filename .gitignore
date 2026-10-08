@@ -1,8 +1,5 @@
 dist/
 coverage/
-node_modules/
 .env
 .env.*
 !.env.example
-AGENTS.md
-CLAUDE.md

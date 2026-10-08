@@ -1,98 +1,113 @@
 # dlc-front
 
-Transversal compositor of Di Lucca Dental Care & Technology. It presents the five independent
-domain portals as one application and owns only what must not be repeated: the common frame
-(top bar, sidebar, public header/footer), navigation, the shared browser session, failure
-containment and the shared HTTP capability.
+> Transversal container/compositor for Di Lucca Dental Care & Technology.
 
-**dlc-front has no technology of its own** ([ADR-011](https://github.com/code-corhuila/dlc-docs/blob/main/05-architecture/decisions/ADR-011-transversal-frontend-composition.md)):
-plain TypeScript and DOM APIs, no Angular, React or Module Federation. Portals are integrated
-through the framework-neutral **composition contract v1** (dlc-docs
-`05-architecture/frontend-composition.md`, C01–C08).
+**dlc-front has no technology of its own.** This is the architectural definition
+in ADR-011, not a pending framework choice. The five independent portals retain
+their technologies. The compositor provides the common header and experience
+frame, documented navigation/composition and approved shared capabilities.
 
-| Portal | Repository | Technology | Routes |
-| --- | --- | --- | --- |
-| `iam` | `dlc-iam-portal` | Angular | `/login`, `/recover-password`, `/app/administration`, `/app/sessions` |
-| `patient` | `dlc-patient-portal` | Angular | `/app/patients` |
-| `appointments` | `dlc-appointments-portal` | Angular | `/app/appointments` |
-| `billing` | `dlc-billing-portal` | Angular | `/app/billing` |
-| `clinical` | `dlc-clinical-portal` | React | `/app/clinical`, Analytics in `/app/dashboard` |
+## Five independent portals
 
-## How a portal is integrated
+| Repository | Technology | Responsibility retained by the portal |
+| --- | --- | --- |
+| `dlc-iam-portal` | Angular | IAM views |
+| `dlc-patient-portal` | Angular | Patient administration views |
+| `dlc-appointments-portal` | Angular | Appointment views |
+| `dlc-billing-portal` | Angular | Billing views |
+| `dlc-clinical-portal` | React | Clinical views, including Analytics |
 
-1. The portal publishes a same-origin ES module `/portals/{portalId}/{release}/entry.js`
-   exporting `portalId`, `contractVersion: 1` and `mount(host, context)` (C01–C03).
-2. It is listed in `/portal-registry.json` with its navigation descriptors (C01, C04).
-3. The compositor imports only the selected entry, mounts it in its host and passes a plain
-   context: `route`, `signal`, `navigation`, `session`, `reportFailure` (`iamSession` for IAM).
-   No token or credential ever reaches a portal (C05).
-4. A failing or stopped portal only shows a local "Esta sección no está disponible" card; when
-   its entry answers again the card offers "Actualizar" (C07).
+Portal source code, components and business rules remain in their repositories.
+IAM retains authentication and durable-session authority; each owner service
+enforces resource authorization. There is no patient login or sixth business
+domain in the compositor.
 
-Step-by-step rules for portal teams: `docs/integration/portal-integration-guide.md`.
+## Structural scope
 
-## Source layout
+This increment contains directory placeholders and repository documentation.
+It implements no behavior, routes, session, HTTP client, portal loader or tests.
+There is no runtime, dependency manifest, build configuration or test runner.
+The `.gitkeep` files only retain directories in Git.
 
-| Path | Responsibility |
-| --- | --- |
-| `src/composition/` | Routes (C04), registry and loader (C01), lifecycle (C02), shell controller, history, capabilities |
-| `src/core/session/` | Session projection behind an Auth port (C05) |
-| `src/core/http/` | Shared request transport and target validation (C06) |
-| `src/layout/` | Common frame, public frame, Home, Dashboard shortcuts, 404 and service error pages |
-| `public/` | Static shell (`index.html`, styles, mockup assets) |
-| `fixtures/` | **Development only**: demo registry, C02 test doubles, Auth double, `dev-session.json` |
-| `deploy/` | Dockerfile, nginx template (same-origin proxy, `no-store`), demo compose |
-| `scripts/` | Build helpers, local preview server, PR gates |
+The directory names below organize ADR-011 responsibilities locally; they are
+not a prescribed framework template or an executable integration contract.
 
-`fixtures/` is never copied to `dist/` or into the image and never reaches `main`.
-
-## Run
-
-Requirements: Node 24.12+ and Docker.
-
-```sh
-npm ci
-npm run build
-npm run preview          # http://localhost:4180, Clinical demo expected on :4175
+```text
+dlc-front/
+├── .github/
+│   └── CODEOWNERS
+├── deploy/
+│   └── .gitkeep
+├── src/
+│   ├── composition/
+│   │   └── .gitkeep
+│   ├── core/
+│   │   ├── errors/
+│   │   │   └── .gitkeep
+│   │   ├── http/
+│   │   │   └── .gitkeep
+│   │   └── session/
+│   │       └── .gitkeep
+│   ├── integrations/
+│   │   └── .gitkeep
+│   └── layout/
+│       └── .gitkeep
+├── .gitignore
+└── README.md
 ```
 
-Docker demo (start Clinical first, its network is used by dlc-front):
+| Directory | Reserved responsibility | Specification |
+| --- | --- | --- |
+| `src/composition/` | Coordinate the common experience and documented navigation | ADR-011; navigation map |
+| `src/layout/` | Common header and experience frame | ADR-011; UX/UI |
+| `src/core/session/` | Shared browser-session capability; no IAM business authority | ADR-011; HU-IAM-001; Issue #1 |
+| `src/core/http/` | Shared HTTP capability and specified request correlation | ADR-011; Issue #1; applicable Annex H rules |
+| `src/core/errors/` | Specified transversal errors and failure-isolation policies | ADR-011; applicable Annex H rules |
+| `src/integrations/` | External integration details, separated from compositor policies | ADR-011; dependency boundaries |
+| `deploy/` | Future compositor deployment artifacts, after their specification | Annex H repository responsibility |
+| `.github/` | Existing repository ownership controls | Branching policy |
 
-```sh
-# in dlc-clinical-portal
-docker compose -f deploy/compose.yml up --build -d
-# in dlc-front
-docker compose -f deploy/compose.yml up --build -d   # http://localhost:8080
-```
+## Issue #1 and methodology
 
-Variables are listed in `.env.example`. The demo persona is set in `fixtures/dev-session.json`
-(`DENTIST`, `ADMINISTRATOR`, `SECRETARY_ASSISTANT`); set `persona` to `null` to start signed out.
-The preview-only Auth double accepts `admin@demo.test`, `odontologo@demo.test` and
-`asistente@demo.test` with password `Demo1234!`. These are synthetic users, not Auth accounts.
-The demo script is `docs/demo/clinical-dashboard-demo.md`.
+The project owner supplied the scope of dlc-front Issue #1:
+"Provide shared session and HTTP-client integration for the IAM remote."
+The session, HTTP and integration directories reserve that responsibility for
+future work. Issue #1 and HU-IAM-001 remain unimplemented by this increment.
 
-The IAM image serves `/portals/iam/0.1.0-local/entry.js`. After the front Compose creates
-`dlc-front_default`, start `dlc-iam-portal/deploy/compose.yml` on that network. The front
-proxies IAM assets to `iam-portal-demo` and selects the portal for `/login`,
-`/recover-password`, `/app/administration` and `/app/sessions`. Keep the registry release
-aligned with `IAM_RELEASE` if either changes. The development Auth double handles only the
-three synthetic logins and previews the IAM staff and own-session lists in the browser.
-These records are fictional and read-only; save and revoke actions report unavailable.
-For `npm run preview`, `IAM_ORIGIN` must point to an IAM asset server that serves the
-versioned path; the Angular standalone preview on port 4201 does not serve that module path.
+- **DDD:** Preserve all five portal boundaries. Compositor policies and shared
+  capabilities are separated from external integrations; no domain copies exist.
+- **SDD:** ADR-011 and approved navigation/security/API specifications guide
+  this structure. Framework-specific Annex H templates do not assign a
+  technology to the compositor under the clarification recorded in ADR-011.
+- **TDD:** Harold will perform RED → GREEN → REFACTOR manually for subsequent
+  behavior. No tests or test tooling are introduced here; the documentation
+  does not mandate a test-directory layout for this compositor.
+- **Hexagonal principles:** Keep coordination policies separate from external
+  details. Ports/adapters will follow approved contracts when behavior is
+  introduced; no empty domain/application layers are created for appearance.
 
-## Quality
+## Specification still required for implementation
 
-```sh
-npm run typecheck && npm run lint && npm run format:check
-npm test && npm run test:coverage && npm run build
-```
+Executable portal composition/lifecycle and shared-capability contracts require
+definition and verification. Deployment details also require specification.
+These are integration concerns, not a framework-selection task for dlc-front.
+No endpoints, events, storage mechanism or Angular/React adapter are defined here.
 
-CI (`.github/workflows/ci.yml`) runs the same commands plus `scripts/pr-gates.mjs` (branch,
-400-line size, commit subjects, PR sections, no framework imports). Evidence per increment:
-`docs/quality/validation-evidence.md`. Specification: `docs/spec/dlc-front-spec.md`.
+The canonical story is HU-IAM-001. A HU-04 alias was not found in the reviewed
+documentation; no equivalence is asserted. Structure alone cannot complete the
+story, Issue #1 or the project's Definition of Done.
 
-## Dependencies
+## Documentation references
 
-Composes the portal entries above and, later, the Gateway (`/api/v1`) and Auth (`/api/v1/auth`).
-No database or business logic lives here. User story: HU-IAM-001 (`code-corhuila/dlc-docs#47`).
+Paths below belong to the canonical documentation repository (`ods-docs`):
+
+- `05-architecture/decisions/ADR-011-transversal-frontend-composition.md`
+- `05-architecture/hexagonal-architecture.md`
+- `09-microservices/transversal-repositories.md`
+- `04-requirements/traceability-matrix.md`
+- `07-api/authentication.md`
+- `11-quality/testing-strategy.md`
+- `12-ux-ui/navigation-map.md`
+- `00-governance/branching-policy.md`
+- `00-governance/definition-of-done.md`
+- `00-governance/quality-gates.md`

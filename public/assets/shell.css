@@ -1,0 +1,241 @@
+/* Common frame (mockup p. 4). Values measured on the mockup; shell-only selectors. */
+@font-face {
+  font-family: Inter;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url('/assets/fonts/inter-latin-wght-normal.woff2') format('woff2');
+}
+
+:root {
+  --dlc-teal: #1ea296;
+  --dlc-teal-strong: #20a99a;
+  --dlc-active-bg: #e4ebf8;
+  --dlc-sidebar-bg: #f2f4f6;
+  --dlc-page-bg: #f7f9fb;
+  --dlc-line: #c2c6d4;
+  --dlc-text: #1f2933;
+  --dlc-text-nav: #424752;
+  --dlc-text-muted: #94a3b8;
+  --dlc-focus: #1554a3;
+  --dlc-font: Inter, system-ui, sans-serif;
+}
+
+html,
+body {
+  margin: 0;
+  height: 100%;
+}
+
+.dlc-shell {
+  display: flex;
+  min-height: 100vh;
+  font-family: var(--dlc-font);
+  color: var(--dlc-text);
+  background: var(--dlc-page-bg);
+}
+
+.dlc-sidebar {
+  position: sticky;
+  top: 0;
+  display: flex;
+  flex-direction: column;
+  flex: 0 0 256px;
+  width: 256px;
+  height: 100vh;
+  box-sizing: border-box;
+  background: var(--dlc-sidebar-bg);
+  border-right: 1px solid var(--dlc-line);
+}
+
+.dlc-logo {
+  display: block;
+  width: 158px;
+  margin: 56px 0 27px 36px;
+}
+
+.dlc-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding: 0 12px 0 12px;
+}
+
+.dlc-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  height: 44px;
+  padding: 0 10px;
+  border-radius: 6px 0 0 6px;
+  color: var(--dlc-text-nav);
+  font-size: 15px;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.dlc-nav-item:hover {
+  background: #e9edf2;
+}
+
+.dlc-nav-item[aria-current='page'] {
+  background: var(--dlc-active-bg);
+  box-shadow: inset -4px 0 0 var(--dlc-teal);
+  color: var(--dlc-teal);
+}
+
+.dlc-icon {
+  width: 22px;
+  height: 22px;
+  flex: none;
+}
+
+.dlc-sidebar-user {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: auto;
+  padding: 36px 24px 37px;
+  border-top: 1px solid var(--dlc-line);
+}
+
+.dlc-avatar {
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  border-radius: 50%;
+  font-weight: 700;
+}
+
+.dlc-sidebar-user .dlc-avatar {
+  width: 36px;
+  height: 36px;
+  background: #ccfbf1;
+  color: #115e59;
+  font-size: 12px;
+}
+
+.dlc-sidebar-who {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1;
+}
+
+.dlc-name {
+  overflow: hidden;
+  font-size: 13px;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dlc-role {
+  padding-left: 6px;
+  color: var(--dlc-text-muted);
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.dlc-logout {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  background: none;
+  color: #abb7c8;
+  cursor: pointer;
+}
+
+.dlc-logout:hover {
+  color: #d64545;
+}
+
+.dlc-logout .dlc-icon {
+  width: 18px;
+  height: 18px;
+}
+
+.dlc-column {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+}
+
+.dlc-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 24px;
+  height: 63px;
+  padding: 0 0 0 24px;
+  box-sizing: border-box;
+  border-bottom: 1px solid var(--dlc-line);
+}
+
+.dlc-search {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 372px;
+  height: 38px;
+  padding: 0 12px;
+  box-sizing: border-box;
+  border: 1px solid var(--dlc-line);
+  border-radius: 8px;
+  background: #f6f6f6;
+  color: #424752;
+}
+
+.dlc-search-input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  background: none;
+  font: 15px var(--dlc-font);
+}
+
+.dlc-search-input:disabled {
+  cursor: not-allowed;
+}
+
+.dlc-user-chip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 38px;
+  margin-right: -23px;
+  padding: 0 14px 0 12px;
+  border: 1px solid #e5e7eb;
+  border-radius: 19px;
+  background: #fff;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.dlc-user-chip .dlc-avatar {
+  width: 24px;
+  height: 24px;
+  background: var(--dlc-teal-strong);
+  color: #fff;
+  font-size: 11px;
+}
+
+.dlc-user-chip .dlc-icon {
+  width: 16px;
+  height: 16px;
+  color: #94a3b8;
+}
+
+.dlc-main {
+  flex: 1;
+  padding: 24px;
+}
+
+:focus-visible {
+  outline: 2px solid var(--dlc-focus);
+  outline-offset: 2px;
+}

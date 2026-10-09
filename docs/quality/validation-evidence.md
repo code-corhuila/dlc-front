@@ -154,3 +154,22 @@ width; the mockup chip itself overflows the 1280 px page edge.
   100 % lines), build: pass locally; CI result in the PR.
 - **Limitations:** the entry loader (registry fetch + dynamic import) and capability factory are
   injected; they are wired with the shell controller in the next increment.
+
+## DEV-FRONT-LOADER-001
+
+- **Story:** HU-IAM-001, Issue #1, `code-corhuila/dlc-docs#47`.
+- **Change:** `src/composition/loader.ts` fetches `/portal-registry.json` once (same-origin,
+  `no-store`, 10 s deadline), validates it with `parseRegistry` and imports only the selected
+  available `entryUrl`; an unreachable or invalid registry fails closed and imports nothing;
+  `invalidate()` lets an explicit retry revalidate it (C01, C07). `src/layout/pages.ts` adds the
+  shell pages: global 404 with a way back, local PORTAL_UNAVAILABLE notice (`role=alert`) with
+  explicit retry, and the shell-owned Dashboard (title, greeting, role-filtered shortcuts and an
+  empty Clinical Analytics host). Headings are focusable for post-navigation focus (C04).
+- **TDD:** `tests/composition/loader.test.mjs` and `tests/layout/pages.test.mjs` failed first with
+  `ERR_MODULE_NOT_FOUND` (RED); after implementation 4/4 and 3/3 pass (GREEN).
+- **Deviation:** the mockup greeting "Bienvenida de nuevo, Dra. Sarah. Esto es lo que sucede hoy."
+  becomes "Hola de nuevo, {name}." because the shell does not know the user's gender and shows
+  no daily data (indicators are Clinical-owned, HU-CLN-003).
+- **Validation:** typecheck, lint, format:check, test, test:coverage, build: results in the PR.
+- **Limitations:** wiring with history, lifecycle and the browser comparison come in the next
+  increment.

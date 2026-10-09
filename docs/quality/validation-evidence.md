@@ -49,3 +49,16 @@ reference the affected entry. Git history, PRs and GitHub Actions are the suppor
   after implementation 4/4 pass (GREEN).
 - **Validation:** typecheck, lint, format:check, test, test:coverage, build: results in the PR.
 - **Limitations:** no visible frame yet (next increments); `happy-dom` is added for DOM tests.
+
+## DEV-FRONT-FRAME-001
+
+- **Story:** HU-IAM-001, Issue #1, `code-corhuila/dlc-docs#47`.
+- **Change:** DOM structure of the common frame (mockup p. 4) in plain TypeScript: landmarks
+  (banner, labelled navigation, main), sidebar from the C04 model with `aria-current`, top bar
+  with the deferred search (disabled) and user chip, sidebar footer with initials, role badge
+  and a labelled Logout action, and the empty composition host. `src/main.ts` mounts it with a
+  fixed ADMINISTRATOR development persona until the C05 session port lands.
+- **TDD:** `tests/layout/frame.test.mjs` failed first with `ERR_MODULE_NOT_FOUND` (RED); after
+  implementation 7/7 pass (GREEN).
+- **Validation:** typecheck, lint, format:check, test, test:coverage, build: results in the PR.
+- **Limitations:** styles, logo and the browser comparison with the mockup arrive in the next PR.

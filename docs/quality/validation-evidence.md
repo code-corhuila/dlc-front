@@ -96,3 +96,21 @@ width; the mockup chip itself overflows the 1280 px page edge.
 | Icons | Outline approximations of the mockup glyphs | Original icon set not in the repository |
 | Role badge | ADMIN / ODONTÓLOGO / SECRETARÍA | Mockup only shows ADMIN |
 | Dashboard content (KPIs, charts, next appointments) | Not rendered by the shell | Clinical-owned Analytics (HU-CLN-003); shell adds shortcuts in a later increment |
+
+## DEV-FRONT-ROUTES-001
+
+- **Story:** HU-IAM-001, Issue #1, `code-corhuila/dlc-docs#47`.
+- **Change:** `src/composition/routes.ts`, the pure C04 route resolver used to select and mount
+  every portal: `/` → login or dashboard by session state, `/app` → dashboard, C01 owner bases
+  (IAM `/login`, `/recover-password`, `/app/administration`; Patients, Appointments, Billing,
+  Clinical prefixes) with whole-segment matching, legacy `/app/patients/{uuid}` →
+  `/app/clinical/{uuid}` with replacement (query and fragment kept), Dashboard as shell-owned
+  page hosting Clinical Analytics at localPath `/analytics`, shell 404 for unknown paths, and
+  anonymous access to protected bases → sign-in with a pathname-only safe return.
+  The route handed to portals carries `globalPath`, `basePath`, `localPath`, `query`
+  (string arrays) and `fragment` without `#`.
+- **TDD:** `tests/composition/routes.test.mjs` failed first with `ERR_MODULE_NOT_FOUND` (RED);
+  after implementation 7/7 pass (GREEN). Covers the routing part of FC-06.
+- **Validation:** typecheck, lint, format:check, test, test:coverage, build: results in the PR.
+- **Limitations:** no history wiring, 404 page or dashboard yet (next increment); `compositionId`
+  is added by the lifecycle (C02).

@@ -92,3 +92,16 @@ export function activeItemId(
   );
   return match ? match.id : null;
 }
+
+const ORDER = BASELINE_NAVIGATION.map((item) => item.id);
+
+/** Owner-supplied descriptors in the C04 baseline sidebar order; others follow. */
+export function orderNavigation(
+  items: readonly NavigationDescriptor[],
+): NavigationDescriptor[] {
+  const rank = (item: NavigationDescriptor) => {
+    const position = ORDER.indexOf(item.id);
+    return position === -1 ? ORDER.length : position;
+  };
+  return [...items].sort((a, b) => rank(a) - rank(b));
+}

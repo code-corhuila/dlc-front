@@ -1,4 +1,5 @@
-// Local preview of dist/: deep links return the shell HTML; missing assets 404 (C01).
+// Local preview of dist/ plus fixtures/ (registry and C02 test-double portals).
+// Deep links return the shell HTML; missing assets return 404 (C01).
 import { createServer } from 'node:http';
 import { readFile } from 'node:fs/promises';
 import { extname, join, normalize } from 'node:path';
@@ -18,7 +19,9 @@ createServer(async (request, response) => {
   const isAsset = extname(path) !== '';
   const file = join('dist', isAsset ? path : 'index.html');
   try {
-    const body = await readFile(file);
+    const body = await readFile(join('fixtures', path)).catch(() =>
+      readFile(file),
+    );
     response.writeHead(200, {
       'content-type': TYPES[extname(file)] ?? 'application/octet-stream',
       'cache-control': 'no-store',

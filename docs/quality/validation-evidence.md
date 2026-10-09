@@ -36,3 +36,16 @@ reference the affected entry. Git history, PRs and GitHub Actions are the suppor
 - **Notes:** two `no-control-regex` exceptions in `requestTarget.ts` are intentional (C06 rejects
   control characters). Existing sources were reformatted in a separate `style` commit. Markdown is
   excluded from Prettier to avoid documentation churn.
+
+## DEV-FRONT-NAV-001
+
+- **Story:** HU-IAM-001, Issue #1, `code-corhuila/dlc-docs#47`.
+- **Change:** C04 navigation model (baseline descriptors, generic `rolesAny`/`permissionsAll`
+  membership that fails closed, active item by whole path segments) and the static shell
+  pipeline: `public/` copied to `dist/` by `npm run build`, self-hosted Inter font,
+  `npm run preview` (no-store, shell HTML for deep links, 404 for missing assets, C01).
+  `rewriteRelativeImportExtensions` lets sources import `.ts` and emit `.js`.
+- **TDD:** `tests/layout/navigation.test.mjs` failed first with `ERR_MODULE_NOT_FOUND` (RED);
+  after implementation 4/4 pass (GREEN).
+- **Validation:** typecheck, lint, format:check, test, test:coverage, build: results in the PR.
+- **Limitations:** no visible frame yet (next increments); `happy-dom` is added for DOM tests.

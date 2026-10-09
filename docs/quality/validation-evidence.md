@@ -21,3 +21,18 @@ reference the affected entry. Git history, PRs and GitHub Actions are the suppor
 | Annex H rule 4: `remoteEntry`/manifest never cached | Registry and `entry.js` `no-store` (C01) | Same intent applied to the new artifacts |
 | Norm 5.5.2: dev sign-in with `dlc-infra` token | Session owned by Auth (C05) | Auth double behind the C05 port, develop only; replaced by IAM + Auth when they exist |
 | Annex I: CI with Node 22 | Repository engines Node 24.12+ (native TS test run) | Node 24, admitted by norm 5.5.1 |
+
+## DEV-FRONT-QUALITY-001
+
+- **Story:** HU-IAM-001, Issue #1, `code-corhuila/dlc-docs#47`.
+- **Change:** ESLint, Prettier, Node test coverage (lines ≥90 %, branches ≥80 % over `src/`),
+  `tsc` build to `dist/`, `.gitattributes`, `.env.example`, and `scripts/pr-gates.mjs`
+  (norm 9.2 size, 6.3 branch, 8/15.2 commits, 9.1 PR body, ADR-011 no-framework import check),
+  all run by `ci.yml`.
+- **TDD:** `tests/scripts/pr-gates.test.mjs` ran first and failed with `ERR_MODULE_NOT_FOUND`
+  (RED); after adding the script, 6/6 pass (GREEN).
+- **Validation (local, Node 24.19):** typecheck, lint, format:check, test (19 pass),
+  test:coverage (100 % lines/branches on `requestTarget.ts`), build: all pass.
+- **Notes:** two `no-control-regex` exceptions in `requestTarget.ts` are intentional (C06 rejects
+  control characters). Existing sources were reformatted in a separate `style` commit. Markdown is
+  excluded from Prettier to avoid documentation churn.

@@ -4,8 +4,7 @@ export type RequestTarget = Readonly<{
 }>;
 
 export type TargetValidation =
-  | { ok: true; target: RequestTarget }
-  | { ok: false; error: 'INVALID_REQUEST' };
+  { ok: true; target: RequestTarget } | { ok: false; error: 'INVALID_REQUEST' };
 
 // C06 / FC-13: an internal shape check, not operation approval or authorization.
 export function validateRequestTarget(input: unknown): TargetValidation {
@@ -23,8 +22,14 @@ export function validateRequestTarget(input: unknown): TargetValidation {
       return invalid;
     }
     // Residual percent signs are rejected to prevent nested encoding ambiguity.
-    if (!decoded || decoded === '.' || decoded === '..' ||
-        /[\s\u0000-\u001f\u007f/\\?#%]/u.test(decoded)) return invalid;
+    if (
+      !decoded ||
+      decoded === '.' ||
+      decoded === '..' ||
+      // eslint-disable-next-line no-control-regex -- C06 rejects control characters on purpose
+      /[\s\u0000-\u001f\u007f/\\?#%]/u.test(decoded)
+    )
+      return invalid;
   }
 
   const source = input.headers === undefined ? {} : input.headers;
@@ -32,8 +37,13 @@ export function validateRequestTarget(input: unknown): TargetValidation {
   const headers: Record<string, string> = {};
   for (const [name, value] of Object.entries(source)) {
     const key = name.toLowerCase();
-    if (!allowedHeaders.has(key) || Object.hasOwn(headers, key) ||
-        typeof value !== 'string' || /[\u0000-\u001f\u007f]/u.test(value)) {
+    if (
+      !allowedHeaders.has(key) ||
+      Object.hasOwn(headers, key) ||
+      typeof value !== 'string' ||
+      // eslint-disable-next-line no-control-regex -- C06 rejects control characters on purpose
+      /[\u0000-\u001f\u007f]/u.test(value)
+    ) {
       return invalid;
     }
     headers[key] = value;
@@ -42,7 +52,10 @@ export function validateRequestTarget(input: unknown): TargetValidation {
 }
 
 const allowedHeaders = new Set([
-  'accept', 'content-type', 'if-match', 'idempotency-key',
+  'accept',
+  'content-type',
+  'if-match',
+  'idempotency-key',
 ]);
 
 function isRecord(value: unknown): value is Record<string, unknown> {

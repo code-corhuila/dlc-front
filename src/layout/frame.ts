@@ -19,7 +19,12 @@ export type FrameOptions = Readonly<{
   onLogout: () => void;
 }>;
 
-export type Frame = Readonly<{ root: HTMLElement; host: HTMLElement }>;
+export type Frame = Readonly<{
+  root: HTMLElement;
+  host: HTMLElement;
+  main: HTMLElement;
+  setActive: (path: string) => void;
+}>;
 
 const ROLE_BADGES: Readonly<Record<string, string>> = {
   ADMINISTRATOR: 'ADMIN',
@@ -49,12 +54,10 @@ export function renderFrame(document: Document, options: FrameOptions): Frame {
 
   const nav = el('nav', 'dlc-nav');
   nav.setAttribute('aria-label', 'Principal');
-  const active = activeItemId(options.navigation, options.path);
   for (const item of visibleItems(options.navigation, user)) {
     const link = el('a', 'dlc-nav-item');
     link.href = item.path;
     link.dataset.id = item.id;
-    if (item.id === active) link.setAttribute('aria-current', 'page');
     link.append(icon(document, item.id), el('span', '', item.label));
     nav.append(link);
   }
@@ -100,11 +103,20 @@ export function renderFrame(document: Document, options: FrameOptions): Frame {
   host.id = 'composition-host';
   const main = el('main', 'dlc-main');
   main.id = 'content';
+  main.tabIndex = -1; // Focus fallback when a portal has no focusable heading.
   main.append(host);
 
   const column = el('div', 'dlc-column');
   column.append(header, main);
   const root = el('div', 'dlc-shell');
   root.append(sidebar, column);
-  return { root, host };
+  const setActive = (path: string) => {
+    const active = activeItemId(options.navigation, path);
+    for (const link of nav.querySelectorAll('a')) {
+      if (link.dataset.id === active) link.setAttribute('aria-current', 'page');
+      else link.removeAttribute('aria-current');
+    }
+  };
+  setActive(options.path);
+  return { root, host, main, setActive };
 }

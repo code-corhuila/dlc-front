@@ -62,3 +62,37 @@ reference the affected entry. Git history, PRs and GitHub Actions are the suppor
   implementation 7/7 pass (GREEN).
 - **Validation:** typecheck, lint, format:check, test, test:coverage, build: results in the PR.
 - **Limitations:** styles, logo and the browser comparison with the mockup arrive in the next PR.
+
+## DEV-FRONT-FRAME-002
+
+- **Story:** HU-IAM-001, Issue #1, `code-corhuila/dlc-docs#47`.
+- **Change:** shell styles measured on mockup p. 4 (`public/assets/shell.css`, shell-prefixed
+  selectors only) and the DI LUCCA logo extracted from the mockup (`public/assets/logo.png`).
+- **TDD:** styling only; verified by the browser comparison below, no RED recorded.
+- **Browser comparison:** mockup p. 4 rendered with pdf.js at 1280×917 (pixel colors read with
+  `getImageData`) against `npm run preview` at `/app/billing/invoices/7`, viewport 1280×917,
+  Inter loaded, positions from `getBoundingClientRect`:
+
+| Element | Mockup | Implementation |
+| --- | --- | --- |
+| Sidebar width / background / border | 256 px, `#F2F4F6`, `#C2C6D4` | 256 px, same colors |
+| Logo box | x 36, y 56, 158×128 | x 36, y 56, 158×128 |
+| Nav item centers (y) | 232, 277, 321, 367, 413, 458 | 233, 278, 323, 368, 413, 458 |
+| Active item | x 12–244, `#E4EBF8`, 4 px `#1EA296` bar | x 12–243, same colors (Facturación active on a descendant route) |
+| Footer | border y 807, height 110, avatar center (42, 862), logout center x 215 | same |
+| Top bar | 63 px, bottom border `#C2C6D4` | 63 px, same |
+| Search box / gap to chip | x 636, 372×38, gap 25 | x 653, 372×38, gap 24 |
+
+The 17 px search offset comes from the 15 px classic scrollbar of the test viewport and the chip
+width; the mockup chip itself overflows the 1280 px page edge.
+
+### Recorded deviations from the mockup
+
+| Element | Deviation | Reason / reference |
+| --- | --- | --- |
+| Sidebar items | Dashboard, Pacientes, Citas, Clínica, Facturación, Administración instead of Pacientes/Procedimiento/Citas/Horarios y Slots/Historia clínica/Facturación/Gestión de Usuarios | C04 baseline descriptors and `navigation-map.md`; owners add sub-areas |
+| Search | Rendered as in the mockup but disabled | No global search is specified; C04 defers shell features beyond navigation |
+| Breadcrumb, notifications, settings | Not rendered | Absent from mockup p. 4; notifications/Help/Settings deferred by C04 |
+| Icons | Outline approximations of the mockup glyphs | Original icon set not in the repository |
+| Role badge | ADMIN / ODONTÓLOGO / SECRETARÍA | Mockup only shows ADMIN |
+| Dashboard content (KPIs, charts, next appointments) | Not rendered by the shell | Clinical-owned Analytics (HU-CLN-003); shell adds shortcuts in a later increment |

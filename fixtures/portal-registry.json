@@ -1,0 +1,85 @@
+{
+  "contractVersion": 1,
+  "registryRevision": "local-preview-doubles",
+  "portals": [
+    {
+      "portalId": "iam",
+      "repository": "dlc-iam-portal",
+      "release": "0.0.0-double",
+      "entryUrl": "/portals/iam/0.0.0-double/entry.js",
+      "navigation": [
+        {
+          "id": "administration",
+          "label": "Administración",
+          "path": "/app/administration",
+          "visibility": { "rolesAny": ["ADMINISTRATOR"], "permissionsAll": [] }
+        }
+      ]
+    },
+    {
+      "portalId": "patient",
+      "repository": "dlc-patient-portal",
+      "release": "0.0.0-double",
+      "entryUrl": "/portals/patient/0.0.0-double/entry.js",
+      "navigation": [
+        {
+          "id": "patients",
+          "label": "Pacientes",
+          "path": "/app/patients",
+          "visibility": { "rolesAny": [], "permissionsAll": [] }
+        }
+      ]
+    },
+    {
+      "portalId": "appointments",
+      "repository": "dlc-appointments-portal",
+      "release": "0.0.0-missing",
+      "entryUrl": "/portals/appointments/0.0.0-missing/entry.js",
+      "navigation": [
+        {
+          "id": "appointments",
+          "label": "Citas",
+          "path": "/app/appointments/calendar",
+          "visibility": { "rolesAny": [], "permissionsAll": [] }
+        }
+      ]
+    },
+    {
+      "portalId": "billing",
+      "repository": "dlc-billing-portal",
+      "release": "0.0.0-double",
+      "entryUrl": "/portals/billing/0.0.0-double/entry.js",
+      "navigation": [
+        {
+          "id": "billing",
+          "label": "Facturación",
+          "path": "/app/billing",
+          "visibility": { "rolesAny": [], "permissionsAll": [] }
+        }
+      ]
+    },
+    {
+      "portalId": "clinical",
+      "repository": "dlc-clinical-portal",
+      "release": "0.0.0-double",
+      "entryUrl": "/portals/clinical/0.0.0-double/entry.js",
+      "navigation": [
+        {
+          "id": "dashboard",
+          "label": "Dashboard",
+          "path": "/app/dashboard",
+          "visibility": { "rolesAny": [], "permissionsAll": [] }
+        },
+        {
+          "id": "clinical",
+          "label": "Clínica",
+          "path": "/app/clinical",
+          "visibility": {
+            "rolesAny": ["DENTIST", "ADMINISTRATOR"],
+            "permissionsAll": []
+          }
+        }
+      ]
+    }
+  ]
+}

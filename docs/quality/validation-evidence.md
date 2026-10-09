@@ -212,3 +212,29 @@ width; the mockup chip itself overflows the 1280 px page edge.
   CI result in the PR.
 - **Limitations:** `src/main.ts` wiring, the test-double portal bundles, the registry file and the
   browser verification come in the next increment.
+
+## DEV-FRONT-WIRING-001
+
+- **Story:** HU-IAM-001, Issue #1, `code-corhuila/dlc-docs#47`.
+- **Change:** `src/main.ts` wires registry loading, the frame (sidebar from the registry's owner
+  descriptors in C04 order), the lifecycle, the shell controller and the browser History adapter
+  (`src/composition/browserHistory.ts`, shell index in `history.state`). Portals receive a frozen
+  context with the scoped `navigation.request` capability (`src/composition/capabilities.ts`),
+  which rejects with CANCELLED once its mount signal aborts. An invalid or unreachable registry
+  renders the frame with the unavailable state and loads no entry (C07). `fixtures/` holds the
+  local-preview registry and C02 test-double portals (IAM, Patients, Billing, Clinical; the
+  Appointments entry is intentionally missing); `npm run preview` serves `fixtures/` over `dist/`
+  and `npm run build` never copies it.
+- **TDD:** `tests/composition/adapters.test.mjs` failed first with `ERR_MODULE_NOT_FOUND` (RED);
+  after implementation 3/3 pass (GREEN).
+- **Browser verification (`npm run build` + `npm run preview`, viewport 1280×917):**
+  `/` → `/app/dashboard` with shortcuts and the Clinical double in the Analytics host
+  (`localPath /analytics`); sidebar Citas → `/app/appointments/calendar` shows the local
+  PORTAL_UNAVAILABLE notice with retry while menu and header stay usable (FC-02); Pacientes →
+  Patients double, heading focused; `/app/patients/{uuid}` link → `/app/clinical/{uuid}`, Clínica
+  active (FC-06); Back → `/app/patients`, Forward → Clinical record; `/app/nada` → global 404 with
+  focused heading and no active item; missing `entry.js` → HTTP 404 (no HTML fallback);
+  `/portal-registry.json` served `no-store`; the console shows only the two expected 404s (the missing
+  Appointments entry import and the manual missing-entry check).
+- **Limitations:** fixed ADMINISTRATOR persona until the C05 session port; HTTP capability (C06)
+  and `reportFailure` (C07) are not yet in the portal context.

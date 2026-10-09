@@ -13,7 +13,6 @@ export type PortalRoute = Readonly<{
 export type Resolution =
   | Readonly<{ kind: 'redirect'; to: string; replace: true }>
   | Readonly<{ kind: 'not-found' }>
-  | Readonly<{ kind: 'home' }>
   | Readonly<{ kind: 'sign-in'; returnPath: string }>
   | Readonly<{
       kind: 'portal' | 'dashboard';
@@ -29,7 +28,6 @@ const OWNERS: readonly (readonly [string, PortalId, boolean])[] = [
   ['/login', 'iam', false],
   ['/recover-password', 'iam', false],
   ['/app/administration', 'iam', true],
-  ['/app/sessions', 'iam', true],
   ['/app/patients', 'patient', true],
   ['/app/appointments', 'appointments', true],
   ['/app/billing', 'billing', true],
@@ -62,11 +60,12 @@ function toRoute(url: URL, basePath: string, localPath: string): PortalRoute {
 /** Selects the owner of a same-origin URL (C04); the portal interprets localPath. */
 export function resolveRoute(url: URL, authenticated: boolean): Resolution {
   const path = url.pathname;
-  // Owner decision: the public Home (mockup p. 1) is the entry where the flow is chosen.
-  if (path === '/') return { kind: 'home' };
-  // A signed-in visitor does not need IAM Login again (C04: otherwise open dashboard).
-  if (authenticated && segments(path).join('/') === 'login')
-    return { kind: 'redirect', to: DASHBOARD, replace: true };
+  if (path === '/')
+    return {
+      kind: 'redirect',
+      to: authenticated ? DASHBOARD : '/login',
+      replace: true,
+    };
   if (segments(path).join('/') === 'app')
     return { kind: 'redirect', to: DASHBOARD, replace: true };
 

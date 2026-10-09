@@ -7,10 +7,13 @@ const auth = (href) => resolveRoute(new URL(href, 'https://dlc.test'), true);
 const anon = (href) => resolveRoute(new URL(href, 'https://dlc.test'), false);
 const owner = (r) => [r.kind, r.portalId, r.basePath, r.localPath];
 
-test('owner decision: / is always the Home entry; signed-in /login opens the dashboard', () => {
-  assert.deepEqual(anon('/'), { kind: 'home' });
-  assert.deepEqual(auth('/'), { kind: 'home' });
-  assert.deepEqual(auth('/login'), {
+test('C04: entry redirects depend on session state', () => {
+  assert.deepEqual(anon('/'), {
+    kind: 'redirect',
+    to: '/login',
+    replace: true,
+  });
+  assert.deepEqual(auth('/'), {
     kind: 'redirect',
     to: '/app/dashboard',
     replace: true,
@@ -23,7 +26,7 @@ test('owner decision: / is always the Home entry; signed-in /login opens the das
 });
 
 test('C01/C04: each owner prefix selects its portal with base and local path', () => {
-  assert.deepEqual(owner(anon('/login')), ['portal', 'iam', '/login', '/']);
+  assert.deepEqual(owner(auth('/login')), ['portal', 'iam', '/login', '/']);
   assert.deepEqual(owner(auth('/recover-password/step')), [
     'portal',
     'iam',
@@ -35,12 +38,6 @@ test('C01/C04: each owner prefix selects its portal with base and local path', (
     'iam',
     '/app/administration',
     '/users/7',
-  ]);
-  assert.deepEqual(owner(auth('/app/sessions')), [
-    'portal',
-    'iam',
-    '/app/sessions',
-    '/',
   ]);
   assert.deepEqual(owner(auth('/app/patients/new')), [
     'portal',
@@ -104,10 +101,6 @@ test('C04: protected routes need a session; anonymous users go to IAM login', ()
   assert.deepEqual(anon('/app/billing'), {
     kind: 'sign-in',
     returnPath: '/app/billing',
-  });
-  assert.deepEqual(anon('/app/sessions'), {
-    kind: 'sign-in',
-    returnPath: '/app/sessions',
   });
   assert.equal(anon('/login').kind, 'portal');
 });

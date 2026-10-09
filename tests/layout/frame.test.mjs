@@ -106,3 +106,16 @@ test('the composition host is an empty region owned by the shell', () => {
   assert.equal(frame.host.id, 'composition-host');
   assert.equal(frame.host.childElementCount, 0);
 });
+
+test('C04: setActive moves aria-current; main is a focus fallback', () => {
+  const { document, frame } = setup(admin, '/app/dashboard');
+  frame.setActive('/app/clinical/3f2504e0-4f89-41d3-9a0c-0305e82c3301');
+  const current = [...document.querySelectorAll('nav a[aria-current="page"]')];
+  assert.deepEqual(
+    current.map((a) => a.textContent.trim()),
+    ['Clínica'],
+  );
+  frame.setActive('/app/unknown');
+  assert.equal(document.querySelectorAll('nav a[aria-current]').length, 0);
+  assert.equal(frame.main.getAttribute('tabindex'), '-1');
+});

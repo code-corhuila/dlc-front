@@ -22,12 +22,12 @@ IAM retains authentication and durable-session authority; each owner service
 enforces resource authorization. There is no patient login or sixth business
 domain in the compositor.
 
-## Structural scope
+## Current scope
 
-This increment contains directory placeholders and repository documentation.
-It implements no behavior, routes, session, HTTP client, portal loader or tests.
-There is no runtime, dependency manifest, build configuration or test runner.
-The `.gitkeep` files only retain directories in Git.
+The merged scaffold reserves the compositor directories. The current Issue #1
+increment implements C06 / FC-13 request-target validation with 13 passing unit
+tests. It does not yet implement the shared HTTP transport, session,
+portal loader or browser application. The `.gitkeep` files retain reserved areas.
 
 The directory names below organize ADR-011 responsibilities locally; they are
 not a prescribed framework template or an executable integration contract.
@@ -45,13 +45,18 @@ dlc-front/
 │   │   ├── errors/
 │   │   │   └── .gitkeep
 │   │   ├── http/
-│   │   │   └── .gitkeep
+│   │   │   ├── .gitkeep
+│   │   │   └── requestTarget.ts
 │   │   └── session/
 │   │       └── .gitkeep
 │   ├── integrations/
 │   │   └── .gitkeep
 │   └── layout/
 │       └── .gitkeep
+├── tests/core/http/requestTarget.test.mjs
+├── package.json
+├── package-lock.json
+├── tsconfig.json
 ├── .gitignore
 └── README.md
 ```
@@ -72,32 +77,50 @@ dlc-front/
 The project owner supplied the scope of [dlc-front Issue #1](https://github.com/code-corhuila/dlc-front/issues/1):
 "Provide shared session and HTTP-client integration for the IAM remote."
 The session, HTTP and integration directories reserve that responsibility for
-future work. Issue #1 and HU-IAM-001 remain unimplemented by this increment.
+future integration. Request-target validation is a preparatory part of Issue #1;
+neither that issue nor HU-IAM-001 is completed by this increment.
 
 - **DDD:** Preserve all five portal boundaries. Compositor policies and shared
   capabilities are separated from external integrations; no domain copies exist.
 - **SDD:** ADR-011 and approved navigation/security/API specifications guide
   this structure. Framework-specific Annex H templates do not assign a
   technology to the compositor under the clarification recorded in ADR-011.
-- **TDD:** Harold will perform RED → GREEN → REFACTOR manually for subsequent
-  behavior. No tests or test tooling are introduced here; the documentation
-  does not mandate a test-directory layout for this compositor.
+- **TDD:** Harold executes RED → GREEN → REFACTOR manually. The request-target
+  RED and GREEN runs are confirmed by the output supplied by Harold.
 - **Hexagonal principles:** Keep coordination policies separate from external
   details. Ports/adapters will follow approved contracts when behavior is
   introduced; no empty domain/application layers are created for appearance.
 
-## Specification still required for implementation
+## Contract and manual verification
 
-Executable portal composition/lifecycle and shared-capability contracts require
-definition and verification. Deployment details also require specification.
-These are integration concerns, not a framework-selection task for dlc-front.
-No endpoints, events, storage mechanism or Angular/React adapter are defined here.
+The project documentation defines composition contract v1 in
+`05-architecture/frontend-composition.md`. This increment targets C06 and FC-13:
+Gateway-relative paths and caller header restrictions. Passing this internal
+shape check will not approve an API operation or authorize a user. Operation
+catalog checks, credentials, correlation and network behavior remain later work.
+
+Tooling uses Node 24.12+ (24.x) and TypeScript 5.9.3; no UI framework is added.
+From this repository, run manually:
+
+```sh
+npm install
+npm run typecheck
+npm test
+```
+
+Include package-lock.json in the PR and use npm ci for subsequent reproducible
+installations. Harold's RED output records a successful type check and 13 failed
+tests, all with `RED: request target validation not implemented`. The placeholder
+was replaced and Harold verified GREEN: typecheck passed; 13 tests passed, with
+zero failures. These tests make no network calls or Auth requests.
+The validator rejects nested percent encoding conservatively and copies allowed
+headers into a normalized result; it never sends an HTTP request.
 
 [Staff sign-in, dlc-docs #47](https://github.com/code-corhuila/dlc-docs/issues/47)
 identifies HU-04 as the global backlog ID and HU-IAM-001 as the technical ID
 of the same story, as confirmed by the issue text supplied by the project owner.
 Issue #1 requires functional integration and evidence, with dependencies on
-HU-IAM-005 (mandatory MFA) and HU-IAM-006 (durable sessions). This structural
+HU-IAM-005 (mandatory MFA) and HU-IAM-006 (durable sessions). This preparatory
 increment does not satisfy those acceptance criteria or close either issue.
 
 ## Documentation references

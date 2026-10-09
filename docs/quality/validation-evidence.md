@@ -114,3 +114,22 @@ width; the mockup chip itself overflows the 1280 px page edge.
 - **Validation:** typecheck, lint, format:check, test, test:coverage, build: results in the PR.
 - **Limitations:** no history wiring, 404 page or dashboard yet (next increment); `compositionId`
   is added by the lifecycle (C02).
+
+## DEV-FRONT-REGISTRY-001
+
+- **Story:** HU-IAM-001, Issue #1, `code-corhuila/dlc-docs#47`.
+- **Change:** `src/composition/registry.ts`, the C01 contract every micro-front is integrated
+  through. `parseRegistry` validates `/portal-registry.json`: `contractVersion: 1`, non-empty
+  `registryRevision`, one descriptor per known `portalId`; unsupported version, duplicate or
+  unknown ids reject the whole registry (fails closed). A descriptor is disabled on its own when
+  its `repository` does not match the owner, its `release` is not a safe segment, its `entryUrl`
+  is not `/portals/{portalId}/{release}/entry.js`, or a navigation descriptor is malformed or
+  points outside the owner's routes (checked with the C04 resolver). Navigation ids/paths claimed
+  by two owners disable both, since no precedence is specified. `validateEntryModule` checks the
+  imported `portalId`, `contractVersion: 1` and `mount` before invoking it.
+- **TDD:** `tests/composition/registry.test.mjs` failed first with `ERR_MODULE_NOT_FOUND` (RED);
+  after implementation 5/5 pass (GREEN). Covers the validation part of FC-01 and FC-02.
+- **Decision recorded:** duplicate navigation claims disable both owners (interpretation of C01
+  "unique IDs/paths"); to be confirmed by the contract owner.
+- **Validation:** typecheck, lint, format:check, test, test:coverage, build: results in the PR.
+- **Limitations:** fetching the registry and importing entries arrive with the lifecycle (C02).

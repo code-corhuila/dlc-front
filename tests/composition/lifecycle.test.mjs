@@ -284,3 +284,39 @@ test('C02: a failed route update ends the mount with a local failure', async () 
   assert.deepEqual(log, ['patient:unmount']);
   assert.equal(container.childElementCount, 0);
 });
+
+test('C04: the same owner in another host slot is remounted, not updated', async () => {
+  const log = [];
+  const clinical = double('clinical', log);
+  const { lifecycle, container } = setup({ clinical });
+  const analytics = container.ownerDocument.createElement('section');
+  await lifecycle.show('clinical', route('/x'));
+  assert.deepEqual(
+    await lifecycle.show('clinical', route('/analytics'), analytics),
+    {
+      status: 'active',
+    },
+  );
+  assert.deepEqual(log, [
+    'clinical:mount',
+    'clinical:unmount',
+    'clinical:mount',
+  ]);
+  assert.equal(analytics.childElementCount, 1);
+  assert.equal(container.childElementCount, 0);
+});
+
+test('C02: voluntary leave asks canLeave before releasing the mount', async () => {
+  const log = [];
+  let allow = false;
+  const patient = double('patient', log, { canLeave: async () => allow });
+  const { lifecycle } = setup({ patient });
+  assert.equal(await lifecycle.leave(), true);
+  await lifecycle.show('patient', route());
+  assert.equal(await lifecycle.leave(), false);
+  assert.equal(lifecycle.state().portalId, 'patient');
+  allow = true;
+  assert.equal(await lifecycle.leave(), true);
+  assert.deepEqual(log, ['patient:mount', 'patient:unmount']);
+  assert.deepEqual(lifecycle.state(), { phase: 'IDLE', portalId: null });
+});

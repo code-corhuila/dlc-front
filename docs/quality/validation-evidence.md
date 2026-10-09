@@ -133,3 +133,24 @@ width; the mockup chip itself overflows the 1280 px page edge.
   "unique IDs/paths"); to be confirmed by the contract owner.
 - **Validation:** typecheck, lint, format:check, test, test:coverage, build: results in the PR.
 - **Limitations:** fetching the registry and importing entries arrive with the lifecycle (C02).
+
+## DEV-FRONT-LIFECYCLE-001
+
+- **Story:** HU-IAM-001, Issue #1, `code-corhuila/dlc-docs#47`.
+- **Change:** `src/composition/lifecycle.ts`, the C02 lifecycle that mounts any micro-front:
+  validated entry (`validateEntryModule`), fresh `div[data-portal]` host per mount, plain base
+  context (`contractVersion`, `portalId`, `mountId`, `compositionId`, `route` with
+  `compositionId`, `signal`) extended by an injected capability factory, handle validation
+  (`updateRoute`, `canLeave`, `unmount`), phases IDLE → LOADING → MOUNTING → ACTIVE →
+  UNMOUNTING → IDLE / FAILED, deadlines (10 s load/mount/update/leave, 2 s unmount),
+  `canLeave` before voluntary transitions, same-owner `updateRoute`, different-owner
+  unmount-then-mount, newer targets superseding pending work (abort signal, late handles
+  unmounted), forced cleanup without veto, and quarantine after a failed cleanup.
+- **TDD:** `tests/composition/lifecycle.test.mjs` failed first with `ERR_MODULE_NOT_FOUND` (RED);
+  after implementation 11/11 pass (GREEN); a 12th case (failed `updateRoute`) was added during
+  refactor for coverage. Uses C02 test-double portals. Covers FC-01 (mount part), FC-02, FC-03,
+  FC-04, FC-05 (lifecycle order) and FC-07.
+- **Validation:** typecheck, lint, format:check, test (54 pass), test:coverage (lifecycle.ts
+  100 % lines), build: pass locally; CI result in the PR.
+- **Limitations:** the entry loader (registry fetch + dynamic import) and capability factory are
+  injected; they are wired with the shell controller in the next increment.

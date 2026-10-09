@@ -99,13 +99,17 @@ Gateway-relative paths and caller header restrictions. Passing this internal
 shape check will not approve an API operation or authorize a user. Operation
 catalog checks, credentials, correlation and network behavior remain later work.
 
-Tooling uses Node 24.12+ (24.x) and TypeScript 5.9.3; no UI framework is added.
+Tooling uses Node 24.12+ (24.x), TypeScript 5.9.3, ESLint and Prettier; no UI framework is added.
 From this repository, run manually:
 
 ```sh
 npm install
 npm run typecheck
+npm run lint
+npm run format:check
 npm test
+npm run test:coverage
+npm run build
 ```
 
 Include package-lock.json in the PR and use npm ci for subsequent reproducible

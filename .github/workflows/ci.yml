@@ -14,10 +14,25 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           node-version: 24
           cache: npm
       - run: npm ci
       - run: npm run typecheck
+      - run: npm run lint
+      - run: npm run format:check
       - run: npm test
+      - run: npm run test:coverage
+      - run: npm run build
+      - name: PR gates (branch, size, commits, traceability, architecture)
+        if: github.event_name == 'pull_request'
+        run: |
+          node scripts/pr-gates.mjs branch --base "$GITHUB_BASE_REF" --head "$GITHUB_HEAD_REF"
+          node scripts/pr-gates.mjs lines --base "origin/$GITHUB_BASE_REF" --head "origin/$GITHUB_HEAD_REF"
+          node scripts/pr-gates.mjs commits --base "origin/$GITHUB_BASE_REF" --head "origin/$GITHUB_HEAD_REF"
+          node scripts/pr-gates.mjs pr
+          node scripts/pr-gates.mjs arch
+          git diff --check "origin/$GITHUB_BASE_REF...HEAD"

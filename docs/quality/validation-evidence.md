@@ -189,3 +189,26 @@ width; the mockup chip itself overflows the 1280 px page edge.
   `tests/composition/navigationTarget.test.mjs` failed with `ERR_MODULE_NOT_FOUND` (RED), then 4/4
   pass (GREEN).
 - **Validation:** typecheck, lint, format:check, test, test:coverage, build: results in the PR.
+
+## DEV-FRONT-SHELL-001
+
+- **Story:** HU-IAM-001, Issue #1, `code-corhuila/dlc-docs#47`.
+- **Change:** `src/composition/shell.ts`, the controller that integrates the micro-fronts: it owns
+  global history (shell index per entry), resolves each URL with C04, follows redirects (entry,
+  Clinical alias, anonymous → `/login` with a pathname-only safe return consumed once), releases
+  the current mount with `canLeave` before page changes, mounts owners into the main host, renders
+  the shell Dashboard with Clinical Analytics in its own host, the global 404 and the local
+  PORTAL_UNAVAILABLE notice with retry (registry revalidation) or reload after quarantine. It
+  exposes `request({path, replace})` → applied / cancelled / rejected for the C04 navigation
+  capability, routes same-origin link clicks, compensates cancelled Back/Forward with a suppressed
+  traversal, updates the active sidebar item and focuses the content heading (or `main`).
+  `frame.setActive` and the focusable `main` support it; `DOM.Iterable` was added to `lib`.
+- **TDD:** `tests/composition/shell.test.mjs` failed first with `ERR_MODULE_NOT_FOUND` (RED); the
+  first GREEN run showed 2 assertion failures caused by the tests' own text matching (no spaces in
+  `textContent`), fixed in the tests; then 9/9 pass. The new `frame.setActive` case failed first
+  (RED) and passes after the change. Covers FC-06, FC-07 (navigation), FC-15 and the C04/C07
+  shell behaviour with C02 test-double portals.
+- **Validation:** typecheck, lint, format:check, test (77 pass), test:coverage, build: pass locally;
+  CI result in the PR.
+- **Limitations:** `src/main.ts` wiring, the test-double portal bundles, the registry file and the
+  browser verification come in the next increment.

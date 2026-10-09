@@ -110,9 +110,14 @@ export function createLifecycle(deps: LifecycleDeps) {
     phase = 'IDLE';
   }
 
-  async function mount(id: PortalId, route: ContextRoute, gen: number) {
+  async function mount(
+    id: PortalId,
+    route: ContextRoute,
+    gen: number,
+    container: HTMLElement,
+  ) {
     const controller = new AbortController();
-    const host = deps.container.ownerDocument.createElement('div');
+    const host = container.ownerDocument.createElement('div');
     host.className = 'dlc-portal-host';
     host.dataset.portal = id;
     pending = { controller, host };
@@ -135,7 +140,7 @@ export function createLifecycle(deps: LifecycleDeps) {
     if (gen !== generation || !validateEntryModule(module, id)) return fail();
 
     phase = 'MOUNTING';
-    deps.container.append(host);
+    container.append(host);
     const base: BaseContext = {
       contractVersion: 1,
       portalId: id,
@@ -168,23 +173,27 @@ export function createLifecycle(deps: LifecycleDeps) {
     return { status: 'active' } as const;
   }
 
-  async function show(id: PortalId, route: PortalRoute): Promise<Outcome> {
+  const askLeave = (mounted: Mounted) =>
+    deadline(() => mounted.handle.canLeave(), limits.leave).then(
+      (answer) => answer === true,
+      () => false,
+    );
+
+  /** Shows `id` in `container`; another slot for the same owner remounts it. */
+  async function show(
+    id: PortalId,
+    route: PortalRoute,
+    container: HTMLElement = deps.container,
+  ): Promise<Outcome> {
     const gen = ++generation;
     abortPending();
     if (quarantined.has(id)) return { status: 'quarantined' };
     const next: ContextRoute = { ...route, compositionId: deps.uuid() };
     const current = active;
     if (current) {
-      const leave = await deadline(
-        () => current.handle.canLeave(),
-        limits.leave,
-      ).then(
-        (answer) => answer === true,
-        () => false,
-      );
-      if (!leave) return { status: 'cancelled' };
+      if (!(await askLeave(current))) return { status: 'cancelled' };
       if (gen !== generation) return SUPERSEDED;
-      if (current.portalId === id) {
+      if (current.portalId === id && current.host.parentNode === container) {
         try {
           await deadline(() => current.handle.updateRoute(next), limits.update);
           return { status: 'active' };
@@ -197,7 +206,18 @@ export function createLifecycle(deps: LifecycleDeps) {
       await cleanup(current);
       if (gen !== generation) return SUPERSEDED;
     }
-    return mount(id, next, gen);
+    return mount(id, next, gen, container);
+  }
+
+  /** Voluntary release before a shell page: canLeave may veto it (C02). */
+  async function leave(): Promise<boolean> {
+    const gen = ++generation;
+    abortPending();
+    const current = active;
+    if (!current) return true;
+    if (!(await askLeave(current)) || gen !== generation) return false;
+    await cleanup(current);
+    return true;
   }
 
   /** Forced cleanup (session invalidation): no leave veto (C02). */
@@ -209,6 +229,7 @@ export function createLifecycle(deps: LifecycleDeps) {
 
   return {
     show,
+    leave,
     clear,
     state: () => ({ phase, portalId: active?.portalId ?? null }),
   };

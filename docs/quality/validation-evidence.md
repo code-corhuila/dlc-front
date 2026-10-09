@@ -173,3 +173,19 @@ width; the mockup chip itself overflows the 1280 px page edge.
 - **Validation:** typecheck, lint, format:check, test, test:coverage, build: results in the PR.
 - **Limitations:** wiring with history, lifecycle and the browser comparison come in the next
   increment.
+
+## DEV-FRONT-SLOTS-001
+
+- **Story:** HU-IAM-001, Issue #1, `code-corhuila/dlc-docs#47`.
+- **Change:** the C02 lifecycle now mounts into a chosen container (main area or the Dashboard
+  Analytics host); the same owner in another slot is remounted instead of updated, so Clinical
+  never keeps its record instance inside the Analytics host. `leave()` releases the active mount
+  voluntarily after `canLeave` (used before shell pages such as 404 and Dashboard).
+  `src/composition/navigationTarget.ts` validates C04 `navigation.request` targets: same-origin
+  absolute paths only; schemes, protocol-relative URLs, backslashes, control characters,
+  dot-segments, malformed encoding and encoded separators → `INVALID_ROUTE`; unknown global
+  paths are not recognized targets.
+- **TDD:** the two new lifecycle cases failed first (2 failures, RED) and pass after the change;
+  `tests/composition/navigationTarget.test.mjs` failed with `ERR_MODULE_NOT_FOUND` (RED), then 4/4
+  pass (GREEN).
+- **Validation:** typecheck, lint, format:check, test, test:coverage, build: results in the PR.

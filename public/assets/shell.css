@@ -239,3 +239,85 @@ body {
   outline: 2px solid var(--dlc-focus);
   outline-offset: 2px;
 }
+
+/* Shell pages: dashboard frame, 404 and PORTAL_UNAVAILABLE (mockup p. 4 card style). */
+.dlc-page-title {
+  margin: 20px 0 8px;
+  font-size: 32px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.dlc-page-title:focus {
+  outline: none;
+}
+
+.dlc-page-subtitle {
+  margin: 0 0 32px;
+  color: var(--dlc-text-nav);
+  font-size: 16px;
+}
+
+.dlc-shortcuts {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 24px;
+  margin-bottom: 48px;
+}
+
+.dlc-shortcut,
+.dlc-state {
+  border: 1px solid #d6dee2;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.dlc-shortcut {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 24px;
+  color: var(--dlc-text);
+  font-size: 15px;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.dlc-shortcut .dlc-icon {
+  padding: 8px;
+  border-radius: 8px;
+  background: var(--dlc-active-bg);
+  color: var(--dlc-teal);
+}
+
+.dlc-shortcut:hover {
+  border-color: var(--dlc-teal);
+}
+
+.dlc-state {
+  max-width: 560px;
+  padding: 32px;
+}
+
+.dlc-state-title {
+  margin: 0 0 8px;
+  font-size: 18px;
+}
+
+.dlc-button {
+  display: inline-flex;
+  align-items: center;
+  height: 40px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: 8px;
+  background: var(--dlc-teal-strong);
+  color: #fff;
+  font: 600 14px var(--dlc-font);
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.dlc-button:hover {
+  background: #168e82;
+}

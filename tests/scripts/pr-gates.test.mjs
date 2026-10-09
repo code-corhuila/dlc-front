@@ -31,7 +31,9 @@ test('norm 9.2: tests, lockfiles and generated output are excluded', () => {
 });
 
 test('norm 9.2: counts computable lines and fails above the limit', () => {
-  const entries = parseNumstat('300\t50\tsrc/a.ts\n90\t0\ttests/a.test.mjs\n-\t-\tlogo.png\n');
+  const entries = parseNumstat(
+    '300\t50\tsrc/a.ts\n90\t0\ttests/a.test.mjs\n-\t-\tlogo.png\n',
+  );
   const ok = evaluateLineLimit(entries);
   assert.equal(ok.total, 350);
   assert.equal(ok.ok, true);
@@ -42,7 +44,10 @@ test('norm 9.2: counts computable lines and fails above the limit', () => {
 test('norm 6.3: branch prefixes must match their permanent target', () => {
   assert.deepEqual(validateBranch('feat/shell-frame', 'develop'), []);
   const codes = (head, base) => validateBranch(head, base).map((f) => f.code);
-  assert.deepEqual(codes('develop', 'qa'), ['BRANCH_PERMANENT_HEAD', 'BRANCH_NO_PREFIX']);
+  assert.deepEqual(codes('develop', 'qa'), [
+    'BRANCH_PERMANENT_HEAD',
+    'BRANCH_NO_PREFIX',
+  ]);
   assert.deepEqual(codes('style/x', 'develop'), ['BRANCH_UNKNOWN_PREFIX']);
   assert.deepEqual(codes('feat/x', 'main'), ['BRANCH_WRONG_TARGET']);
 });
@@ -56,16 +61,24 @@ test('norm 9.1: the PR body has the five sections and a story reference', () => 
   assert.deepEqual(validatePrBody(body), []);
   const missing = validatePrBody(body.replace('## Evidence', '## Other'));
   assert.equal(missing[0].code, 'PR_SECTION_MISSING');
-  const untraced = validatePrBody(body.replace('HU-IAM-001, code-corhuila/dlc-docs#47', 'none'));
+  const untraced = validatePrBody(
+    body.replace('HU-IAM-001, code-corhuila/dlc-docs#47', 'none'),
+  );
   assert.equal(untraced[0].code, 'PR_TRACEABILITY_MISSING');
 });
 
 test('ADR-011: the compositor imports no framework or federation runtime', () => {
   const files = [
-    { path: 'core/a.ts', content: "import { createRoot } from 'react-dom/client';" },
+    {
+      path: 'core/a.ts',
+      content: "import { createRoot } from 'react-dom/client';",
+    },
     { path: 'core/b.ts', content: "import '@angular/core';" },
     { path: 'core/c.ts', content: "import x from '@module-federation/vite';" },
-    { path: 'core/d.ts', content: "import { validateRequestTarget } from './requestTarget.ts';" },
+    {
+      path: 'core/d.ts',
+      content: "import { validateRequestTarget } from './requestTarget.ts';",
+    },
   ];
   assert.deepEqual(
     scanArchitecture(files).map((f) => f.path),

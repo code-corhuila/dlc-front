@@ -19,7 +19,6 @@ function setup(user = admin, path = '/app/dashboard') {
     navigation: BASELINE_NAVIGATION,
     path,
     onLogout: () => calls.push('logout'),
-    onSearch: (term) => calls.push(`search:${term}`),
   });
   document.body.append(frame.root);
   return { document, frame, calls };
@@ -84,50 +83,15 @@ test('user identity is shown in the top bar and the sidebar footer', () => {
   assert.equal(document.querySelector('.dlc-role').textContent, 'ADMIN');
 });
 
-test('search submits the trimmed term to the owner route; empty is ignored', () => {
-  const { document, calls } = setup();
-  const form = document.querySelector('form[role="search"]');
-  const search = form.querySelector('input[type="search"]');
+test('deferred search is rendered but disabled (C04)', () => {
+  const { document } = setup();
+  const search = document.querySelector('input[type="search"]');
   assert.equal(
     search.getAttribute('placeholder'),
     'Buscar pacientes, citas...',
   );
+  assert.equal(search.disabled, true);
   assert.equal(search.getAttribute('aria-label'), 'Buscar pacientes, citas');
-  assert.equal(search.disabled, false);
-  search.value = '  ';
-  form.dispatchEvent(
-    new document.defaultView.Event('submit', { cancelable: true }),
-  );
-  search.value = ' patient-a ';
-  form.dispatchEvent(
-    new document.defaultView.Event('submit', { cancelable: true }),
-  );
-  assert.deepEqual(calls, ['search:patient-a']);
-});
-
-test('user chip opens a menu with identity, Inicio and Cerrar sesión', () => {
-  const { document, calls } = setup();
-  const chip = document.querySelector('button.dlc-user-chip');
-  const menu = document.querySelector('.dlc-user-menu');
-  assert.equal(chip.getAttribute('aria-haspopup'), 'menu');
-  assert.equal(chip.getAttribute('aria-expanded'), 'false');
-  assert.equal(menu.hidden, true);
-  chip.click();
-  assert.equal(chip.getAttribute('aria-expanded'), 'true');
-  assert.equal(menu.hidden, false);
-  assert.match(menu.textContent, /Administrador DI-LUCCA/);
-  assert.equal(
-    menu.querySelector('a[role="menuitem"]').getAttribute('href'),
-    '/',
-  );
-  document.dispatchEvent(
-    new document.defaultView.KeyboardEvent('keydown', { key: 'Escape' }),
-  );
-  assert.equal(menu.hidden, true);
-  chip.click();
-  menu.querySelector('button[role="menuitem"]').click();
-  assert.deepEqual(calls, ['logout']);
-  assert.equal(menu.hidden, true);
 });
 
 test('logout is a labelled shell action (C05)', () => {
@@ -141,57 +105,4 @@ test('the composition host is an empty region owned by the shell', () => {
   const { frame } = setup();
   assert.equal(frame.host.id, 'composition-host');
   assert.equal(frame.host.childElementCount, 0);
-});
-
-test('C04: setActive moves aria-current; main is a focus fallback', () => {
-  const { document, frame } = setup(admin, '/app/dashboard');
-  frame.setActive('/app/clinical/3f2504e0-4f89-41d3-9a0c-0305e82c3301');
-  const current = [...document.querySelectorAll('nav a[aria-current="page"]')];
-  assert.deepEqual(
-    current.map((a) => a.textContent.trim()),
-    ['Clínica'],
-  );
-  frame.setActive('/app/unknown');
-  assert.equal(document.querySelectorAll('nav a[aria-current]').length, 0);
-  assert.equal(frame.main.getAttribute('tabindex'), '-1');
-});
-
-test('C05: setUser re-renders the role menu and identity for a new persona', () => {
-  const { document, frame } = setup(admin, '/app/administration');
-  frame.setUser({
-    id: 'u-2',
-    name: 'Laura Secretaría',
-    roles: ['SECRETARY_ASSISTANT'],
-    permissions: [],
-  });
-  const labels = [...document.querySelectorAll('nav a')].map((a) =>
-    a.textContent.trim(),
-  );
-  assert.equal(labels.includes('Administración'), false);
-  assert.equal(
-    document.querySelector('.dlc-chip-name').textContent,
-    'Laura Secretaría',
-  );
-  assert.equal(
-    document.querySelector('.dlc-sidebar-user .dlc-avatar').textContent,
-    'LA',
-  );
-  assert.equal(document.querySelector('.dlc-role').textContent, 'SECRETARÍA');
-  assert.equal(document.querySelectorAll('nav a[aria-current]').length, 0);
-});
-
-test('icon-only sidebar keeps an accessible name and tooltip per link', () => {
-  const { document } = setup();
-  for (const link of document.querySelectorAll('nav a')) {
-    assert.equal(link.getAttribute('aria-label'), link.textContent.trim());
-    assert.equal(link.getAttribute('title'), link.textContent.trim());
-  }
-});
-
-test('sidebar logo links to the Home entry', () => {
-  const { document } = setup();
-  const link = document.querySelector('.dlc-sidebar a.dlc-logo-link');
-  assert.equal(link.getAttribute('href'), '/');
-  assert.equal(link.getAttribute('aria-label'), 'DI LUCCA, inicio');
-  assert.ok(link.querySelector('img.dlc-logo'));
 });

@@ -462,3 +462,22 @@ width; the mockup chip itself overflows the 1280 px page edge.
   copies restored afterwards:** malformed `dev-session.json` → "Servicio de autenticación no
   disponible" at `/app/clinical/patient-a` in the public frame; invalid `portal-registry.json`
   → "Servicios no disponibles" inside the app frame.
+
+## DEV-FRONT-HOME-001
+
+- **Story:** HU-IAM-001, Issue #1, `code-corhuila/dlc-docs#47`.
+- **Change:** public Home (mockup p. 1) at `/` for anonymous visitors, inside the public frame:
+  the hero artwork extracted from the mockup PDF (`public/assets/home-hero.jpg`, 1802×872,
+  anchored left so its text stays visible) fills the area between header and footer; the same
+  content is provided as visually hidden text (`h1` "¡Bienvenido!", tagline, description, four
+  pillars). Header: logo → `/`, Login → `/login` (IAM), Citas → `/app/appointments/calendar`
+  (Login first, then safe return); Servicios and Contacto stay inactive (no pages specified).
+  Authenticated `/` still goes to the Dashboard.
+- **Difference with dlc-docs (owner decision):** `navigation-map.md` lists Home as deferred and
+  C04 redirects anonymous `/` to Login. The project owner asked for the Home now; dlc-docs
+  should be updated accordingly. Login, recovery and MFA remain IAM content.
+- **TDD:** route, public frame, pages and shell cases failed first (4 failures, RED) and pass
+  after the change (106 tests, GREEN).
+- **Browser check (`npm run preview`, 1280×917):** after logout, logo → `/` shows the Home as in
+  mockup p. 1; Login → `/login` with the IAM double; Citas → `/login`, then sign-in as
+  SECRETARY_ASSISTANT → `/app/appointments/calendar` with Citas active.

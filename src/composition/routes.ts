@@ -13,6 +13,7 @@ export type PortalRoute = Readonly<{
 export type Resolution =
   | Readonly<{ kind: 'redirect'; to: string; replace: true }>
   | Readonly<{ kind: 'not-found' }>
+  | Readonly<{ kind: 'home' }>
   | Readonly<{ kind: 'sign-in'; returnPath: string }>
   | Readonly<{
       kind: 'portal' | 'dashboard';
@@ -60,12 +61,11 @@ function toRoute(url: URL, basePath: string, localPath: string): PortalRoute {
 /** Selects the owner of a same-origin URL (C04); the portal interprets localPath. */
 export function resolveRoute(url: URL, authenticated: boolean): Resolution {
   const path = url.pathname;
+  // Owner decision: the public Home (mockup p. 1) replaces C04's anonymous redirect to Login.
   if (path === '/')
-    return {
-      kind: 'redirect',
-      to: authenticated ? DASHBOARD : '/login',
-      replace: true,
-    };
+    return authenticated
+      ? { kind: 'redirect', to: DASHBOARD, replace: true }
+      : { kind: 'home' };
   if (segments(path).join('/') === 'app')
     return { kind: 'redirect', to: DASHBOARD, replace: true };
 

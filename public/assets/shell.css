@@ -450,3 +450,39 @@ body {
 .dlc-public-host > .dlc-state {
   margin: 64px auto;
 }
+
+/* Public Home (mockup p. 1): the hero artwork fills the area between header and footer. */
+.dlc-home {
+  min-height: 100%;
+  background: #f4f8fb url('/assets/home-hero.jpg') left center / cover no-repeat;
+}
+
+.dlc-public-host:has(> .dlc-home) {
+  display: flex;
+}
+
+.dlc-public-host > .dlc-home {
+  flex: 1;
+}
+
+a.dlc-public-brand {
+  text-decoration: none;
+}
+
+a.dlc-public-link {
+  text-decoration: none;
+  cursor: pointer;
+}
+
+a.dlc-public-link:hover {
+  color: var(--dlc-teal);
+}
+
+.dlc-visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}

@@ -6,6 +6,7 @@ import { createShell } from './composition/shell.ts';
 import { renderFrame } from './layout/frame.ts';
 import { orderNavigation } from './layout/navigation.ts';
 import { renderUnavailable } from './layout/pages.ts';
+import { renderPublicFrame } from './layout/publicFrame.ts';
 
 // Development placeholder until the C05 session port and Auth double land.
 const user = {
@@ -28,8 +29,8 @@ async function boot() {
     path: location.pathname,
     onLogout: () => undefined,
   });
-  document.body.append(frame.root);
   if (!registry.ok) {
+    document.body.append(frame.root);
     // C07: frame plus registry-unavailable state; no arbitrary entries are loaded.
     frame.host.replaceChildren(
       renderUnavailable(document, { onRetry: () => location.reload() }),
@@ -51,7 +52,8 @@ async function boot() {
   });
   const shell = createShell({
     document,
-    frame,
+    frames: { app: frame, public: renderPublicFrame(document) },
+    root: document.body,
     lifecycle,
     history: browserHistory(window),
     isAuthenticated: () => true,

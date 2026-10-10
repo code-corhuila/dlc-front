@@ -321,3 +321,112 @@ body {
 .dlc-button:hover {
   background: #168e82;
 }
+
+/* Public brand frame around IAM Login/Recovery (mockup pp. 1-3, measured at 1280 px). */
+.dlc-public {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  font-family: var(--dlc-font);
+  color: var(--dlc-text);
+  background: #fff;
+}
+
+.dlc-public-header {
+  display: flex;
+  align-items: center;
+  height: 63px;
+  padding: 0 33px 0 38px;
+  box-sizing: border-box;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.dlc-public-brand {
+  display: flex;
+  align-items: center;
+  gap: 30px;
+}
+
+.dlc-public-mark {
+  width: 56px;
+  height: 56px;
+}
+
+.dlc-brand-word {
+  color: var(--dlc-teal);
+  font-size: 17px;
+  font-weight: 800;
+  letter-spacing: 0.3px;
+  white-space: nowrap;
+}
+
+.dlc-brand-di {
+  color: #0f5e5a;
+}
+
+.dlc-public-nav {
+  display: flex;
+  gap: 52px;
+  margin-left: 32px;
+}
+
+.dlc-public-link {
+  color: #134e4a;
+  font-size: 15px;
+  font-weight: 500;
+  cursor: default;
+}
+
+.dlc-public-login {
+  display: inline-flex;
+  align-items: center;
+  height: 35px;
+  margin-left: auto;
+  padding: 0 15px;
+  border-radius: 6px;
+  background: var(--dlc-teal);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.dlc-public-main {
+  display: flex;
+  flex: 1;
+}
+
+.dlc-public-host {
+  flex: 1;
+}
+
+.dlc-public-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 93px;
+  padding: 0 38px;
+  box-sizing: border-box;
+  border-top: 1px solid #e5e7eb;
+  font-size: 14px;
+}
+
+.dlc-public-copy {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+}
+
+.dlc-public-copy .dlc-brand-word {
+  font-size: 16px;
+}
+
+.dlc-public-legal {
+  display: flex;
+  gap: 22px;
+}
+
+.dlc-public-legal .dlc-public-link {
+  font-size: 13px;
+}

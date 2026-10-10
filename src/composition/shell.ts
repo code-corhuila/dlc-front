@@ -24,7 +24,10 @@ export type HistoryPort = Readonly<{
 
 export type ShellDeps = Readonly<{
   document: Document;
-  frame: Frame;
+  /** Authenticated app frame and public brand frame (IAM Login/Recovery). */
+  frames: Readonly<{ app: Frame; public: Frame }>;
+  /** Element that holds the active frame (document.body in the browser). */
+  root: HTMLElement;
   lifecycle: ReturnType<typeof createLifecycle>;
   history: HistoryPort;
   isAuthenticated: () => boolean;
@@ -41,7 +44,8 @@ type Mode = 'push' | 'replace' | 'pop';
 
 /** Compositor-only control of global history and the composition area (C04, C07). */
 export function createShell(deps: ShellDeps) {
-  const { document, frame, lifecycle, history } = deps;
+  const { document, lifecycle, history } = deps;
+  let frame = deps.frames.app;
   let index = history.index();
   let sequence = 0;
   let slot: string | null = null; // `${portalId}` when a portal owns the main host.
@@ -54,6 +58,12 @@ export function createShell(deps: ShellDeps) {
     else if (mode === 'replace') history.replace(url, index);
     else index = popIndex;
     frame.setActive(url.pathname);
+  }
+
+  function use(kind: 'app' | 'public') {
+    frame = deps.frames[kind];
+    if (frame.root.parentNode !== deps.root)
+      deps.root.replaceChildren(frame.root);
   }
 
   function focusContent() {
@@ -101,14 +111,19 @@ export function createShell(deps: ShellDeps) {
       resolution = resolveRoute(url, deps.isAuthenticated());
     }
 
-    const sameSlot =
-      resolution.kind === 'portal' && slot === resolution.portalId;
+    // A slot is one owner inside one frame: IAM in the public and the app frame differ.
+    const slotKey =
+      resolution.kind === 'portal'
+        ? `${resolution.protected ? 'app' : 'public'}:${resolution.portalId}`
+        : null;
+    const sameSlot = slotKey !== null && slot === slotKey;
     if (!sameSlot && !(await lifecycle.leave())) return 'cancelled';
     if (mine !== sequence) return 'cancelled';
 
     if (resolution.kind === 'portal') {
+      use(resolution.protected ? 'app' : 'public');
       if (!sameSlot) frame.host.replaceChildren();
-      slot = resolution.portalId;
+      slot = slotKey;
       const outcome = await mountInto(
         resolution.portalId,
         resolution.route,
@@ -121,6 +136,7 @@ export function createShell(deps: ShellDeps) {
     }
 
     slot = null;
+    use('app');
     if (resolution.kind === 'dashboard') {
       const user = deps.user();
       const page = renderDashboard(document, {

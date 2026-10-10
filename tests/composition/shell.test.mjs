@@ -107,6 +107,8 @@ async function setup(start, portals = {}, options = {}) {
     lifecycle,
     history,
     isAuthenticated: () => auth.value,
+    sessionState: () => options.sessionState ?? 'anonymous',
+    retrySession: () => events.push('retry-session'),
     telemetry: (event) => events.push(event),
     user: () => user,
     navigation: () => BASELINE_NAVIGATION,
@@ -323,4 +325,44 @@ test('mockup p. 4: with Clinical Analytics active the shell header is visually d
   assert.ok(
     order.indexOf('dlc-analytics-host') < order.indexOf('dlc-shortcuts'),
   );
+});
+
+test('C05: unavailable or expired sessions show their page instead of Login', async () => {
+  const unavailable = await setup(
+    '/app/billing',
+    {},
+    {
+      authenticated: false,
+      sessionState: 'unavailable',
+    },
+  );
+  const page = unavailable.document.querySelector(
+    '[data-code="SESSION_UNAVAILABLE"]',
+  );
+  assert.ok(page);
+  assert.equal(unavailable.history.current().pathname, '/app/billing');
+  assert.ok(unavailable.document.querySelector('.dlc-public'));
+  page.querySelector('button').click();
+  assert.deepEqual(unavailable.events, ['retry-session']);
+
+  const expired = await setup(
+    '/app/billing',
+    {},
+    {
+      authenticated: false,
+      sessionState: 'expired',
+    },
+  );
+  assert.ok(
+    expired.document.querySelector(
+      '[data-code="SESSION_EXPIRED"] a[href="/login"]',
+    ),
+  );
+  assert.equal(expired.shell.consumeReturn(), '/app/billing');
+});
+
+test('Home: anonymous / renders the Home in the public frame without redirecting', async () => {
+  const { document, history } = await setup('/', {}, { authenticated: false });
+  assert.equal(history.current().pathname, '/');
+  assert.ok(document.querySelector('.dlc-public #public-host .dlc-home'));
 });

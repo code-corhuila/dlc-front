@@ -3,7 +3,9 @@ import test from 'node:test';
 import { Window } from 'happy-dom';
 import {
   renderDashboard,
+  renderHome,
   renderNotFound,
+  renderServiceError,
   renderUnavailable,
 } from '../../src/layout/pages.ts';
 import { BASELINE_NAVIGATION } from '../../src/layout/navigation.ts';
@@ -47,4 +49,59 @@ test('C04: dashboard shows role shortcuts and an analytics host, no business dat
     'Analítica clínica',
   );
   assert.equal(dashboard.analyticsHost.childElementCount, 0);
+});
+
+test('service error pages share the 404 card: heading, message, one action', () => {
+  const document = doc();
+  let retried = 0;
+  const cases = [
+    [
+      renderServiceError(document, 'SESSION_UNAVAILABLE', () => (retried += 1)),
+      'Servicio de autenticación no disponible',
+      'button',
+    ],
+    [renderServiceError(document, 'SESSION_EXPIRED'), 'Tu sesión expiró', 'a'],
+    [
+      renderServiceError(
+        document,
+        'REGISTRY_UNAVAILABLE',
+        () => (retried += 1),
+      ),
+      'Servicios no disponibles',
+      'button',
+    ],
+    [
+      renderServiceError(document, 'UNSUPPORTED_BROWSER'),
+      'Navegador no compatible',
+      null,
+    ],
+  ];
+  for (const [page, title, action] of cases) {
+    assert.equal(page.className, 'dlc-state');
+    assert.equal(page.querySelector('h1').textContent, title);
+    assert.equal(page.querySelector('h1').getAttribute('tabindex'), '-1');
+    assert.ok(page.querySelector('p').textContent.length > 10);
+    if (action) assert.ok(page.querySelector(action));
+  }
+  assert.equal(cases[1][0].querySelector('a').getAttribute('href'), '/login');
+  cases[0][0].querySelector('button').click();
+  cases[2][0].querySelector('button').click();
+  assert.equal(retried, 2);
+});
+
+test('Home (mockup p. 1): hero image as background with an accessible text equivalent', () => {
+  const home = renderHome(doc());
+  assert.equal(home.className, 'dlc-home');
+  assert.equal(home.querySelector('h1').textContent, '¡Bienvenido!');
+  assert.equal(home.querySelector('h1').getAttribute('tabindex'), '-1');
+  assert.match(home.textContent, /Tu sonrisa, nuestra prioridad./);
+  assert.deepEqual(
+    [...home.querySelectorAll('li')].map((li) => li.textContent),
+    [
+      'Seguridad y confianza',
+      'Tecnología avanzada',
+      'Cuidado personalizado',
+      'Sonrisas que transforman',
+    ],
+  );
 });

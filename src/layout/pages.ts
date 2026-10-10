@@ -25,20 +25,83 @@ function heading(document: Document, text: string) {
   return h1;
 }
 
-export function renderNotFound(document: Document): HTMLElement {
+type Action = Readonly<{ label: string; href?: string; onClick?: () => void }>;
+
+/** One card for every full-page state: heading, message and at most one action. */
+function statePage(
+  document: Document,
+  title: string,
+  message: string,
+  action?: Action,
+): HTMLElement {
   const el = make(document);
   const page = el('section', 'dlc-state');
-  const back = el('a', 'dlc-button', 'Ir al Dashboard');
-  back.href = '/app/dashboard';
-  page.append(
-    heading(document, 'Página no encontrada'),
-    el(
-      'p',
-      'dlc-page-subtitle',
-      'La dirección solicitada no existe en DI LUCCA.',
-    ),
-    back,
+  page.append(heading(document, title), el('p', 'dlc-page-subtitle', message));
+  if (action?.href) {
+    const link = el('a', 'dlc-button', action.label);
+    link.href = action.href;
+    page.append(link);
+  } else if (action?.onClick) {
+    const button = el('button', 'dlc-button', action.label);
+    button.type = 'button';
+    button.addEventListener('click', action.onClick);
+    page.append(button);
+  }
+  return page;
+}
+
+export function renderNotFound(document: Document): HTMLElement {
+  return statePage(
+    document,
+    'Página no encontrada',
+    'La dirección solicitada no existe en DI LUCCA.',
+    { label: 'Ir al Dashboard', href: '/app/dashboard' },
   );
+}
+
+export type ServiceError =
+  | 'SESSION_UNAVAILABLE'
+  | 'SESSION_EXPIRED'
+  | 'REGISTRY_UNAVAILABLE'
+  | 'UNSUPPORTED_BROWSER';
+
+/** C05/C07/FC-18 shell states when a service or the browser cannot support the app. */
+export function renderServiceError(
+  document: Document,
+  error: ServiceError,
+  onRetry?: () => void,
+): HTMLElement {
+  const retry = onRetry ? { label: 'Reintentar', onClick: onRetry } : undefined;
+  const page = {
+    SESSION_UNAVAILABLE: () =>
+      statePage(
+        document,
+        'Servicio de autenticación no disponible',
+        'No pudimos verificar tu sesión. Inténtalo de nuevo en unos minutos.',
+        retry,
+      ),
+    SESSION_EXPIRED: () =>
+      statePage(
+        document,
+        'Tu sesión expiró',
+        'Por seguridad, vuelve a iniciar sesión para continuar.',
+        { label: 'Iniciar sesión', href: '/login' },
+      ),
+    REGISTRY_UNAVAILABLE: () =>
+      statePage(
+        document,
+        'Servicios no disponibles',
+        'No pudimos cargar las secciones de DI LUCCA. Inténtalo de nuevo en unos minutos.',
+        retry,
+      ),
+    UNSUPPORTED_BROWSER: () =>
+      statePage(
+        document,
+        'Navegador no compatible',
+        'Usa una versión reciente de Chrome, Edge, Firefox o Safari para ingresar a DI LUCCA.',
+      ),
+  }[error]();
+  page.dataset.code = error;
   return page;
 }
 
@@ -94,4 +157,34 @@ export function renderDashboard(document: Document, options: DashboardOptions) {
     shortcuts,
   );
   return { root, analyticsHost };
+}
+
+/**
+ * Public Home (mockup p. 1). The hero artwork already contains its text, so the same
+ * content is provided as visually hidden text for assistive technology.
+ */
+export function renderHome(document: Document): HTMLElement {
+  const el = make(document);
+  const home = el('section', 'dlc-home');
+  const text = el('div', 'dlc-visually-hidden');
+  const pillars = el('ul');
+  for (const pillar of [
+    'Seguridad y confianza',
+    'Tecnología avanzada',
+    'Cuidado personalizado',
+    'Sonrisas que transforman',
+  ])
+    pillars.append(el('li', '', pillar));
+  text.append(
+    heading(document, '¡Bienvenido!'),
+    el('p', '', 'Tu sonrisa, nuestra prioridad.'),
+    el(
+      'p',
+      '',
+      'En DI LUCCA combinamos tecnología, experiencia y un trato humano para cuidar de ti y tu salud bucal.',
+    ),
+    pillars,
+  );
+  home.append(text);
+  return home;
 }

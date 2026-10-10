@@ -5,7 +5,9 @@ import type {
 } from '../layout/navigation.ts';
 import {
   renderDashboard,
+  renderHome,
   renderNotFound,
+  renderServiceError,
   renderUnavailable,
 } from '../layout/pages.ts';
 import type { createLifecycle, Outcome } from './lifecycle.ts';
@@ -31,6 +33,9 @@ export type ShellDeps = Readonly<{
   lifecycle: ReturnType<typeof createLifecycle>;
   history: HistoryPort;
   isAuthenticated: () => boolean;
+  /** C05 state: unavailable/expired block protected mounting with their own page. */
+  sessionState?: () => string;
+  retrySession?: () => void;
   user: () => NavigationUser & { name: string };
   navigation: () => readonly NavigationDescriptor[];
   onRetry: () => void;
@@ -110,6 +115,23 @@ export function createShell(deps: ShellDeps) {
     for (let hops = 0; hops < 3; hops++) {
       if (resolution.kind === 'sign-in') {
         safeReturn = resolution.returnPath;
+        const state = deps.sessionState?.();
+        if (state === 'unavailable' || state === 'expired') {
+          if (!(await lifecycle.leave()) || mine !== sequence)
+            return 'cancelled';
+          slot = null;
+          use('public');
+          frame.host.replaceChildren(
+            renderServiceError(
+              document,
+              state === 'expired' ? 'SESSION_EXPIRED' : 'SESSION_UNAVAILABLE',
+              deps.retrySession,
+            ),
+          );
+          commit(url, mode, popIndex);
+          focusContent();
+          return 'applied';
+        }
         url = new URL('/login', url);
       } else if (resolution.kind === 'redirect')
         url = new URL(resolution.to, url);
@@ -143,6 +165,13 @@ export function createShell(deps: ShellDeps) {
     }
 
     slot = null;
+    if (resolution.kind === 'home') {
+      use('public');
+      frame.host.replaceChildren(renderHome(document));
+      commit(url, mode, popIndex);
+      focusContent();
+      return 'applied';
+    }
     use('app');
     if (resolution.kind === 'dashboard') {
       const user = deps.user();

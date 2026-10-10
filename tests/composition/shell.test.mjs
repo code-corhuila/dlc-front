@@ -422,3 +422,63 @@ test('C07: a portal that cannot be loaded is recorded with its stage and identif
     { code: 'PORTAL_UNAVAILABLE', portalId: 'billing', stage: 'load' },
   ]);
 });
+
+test('C07 + owner decision: an active portal whose entry stops answering is replaced by the notice', async () => {
+  const window = new Window({ url: ORIGIN + '/app/billing' });
+  const { document } = window;
+  const frame = renderFrame(document, {
+    user,
+    navigation: BASELINE_NAVIGATION,
+    path: '/app/billing',
+    onLogout: () => {},
+  });
+  const ticks = [];
+  let reachable = true;
+  const events = [];
+  const shell = createShell({
+    document,
+    frames: { app: frame, public: renderPublicFrame(document) },
+    root: document.body,
+    lifecycle: createLifecycle({
+      container: frame.host,
+      deadlines: { load: 50, mount: 50, update: 50, leave: 50, unmount: 50 },
+      uuid: () => 'm-1',
+      loadEntry: async () => portal('billing'),
+      createContext: (b) => b,
+    }),
+    history: fakeHistory('/app/billing'),
+    isAuthenticated: () => true,
+    user: () => user,
+    navigation: () => BASELINE_NAVIGATION,
+    onRetry: () => {},
+    reload: () => {},
+    reachable: async () => reachable,
+    schedule: (fn) => {
+      ticks.push(fn);
+      return () => {};
+    },
+    telemetry: (e) => events.push(e),
+  });
+  await shell.start();
+  assert.ok(document.querySelector('[data-portal="billing"]'));
+  await ticks[0]();
+  assert.ok(document.querySelector('[data-portal="billing"]'));
+  reachable = false;
+  await ticks[0]();
+  assert.ok(
+    document.querySelector('[data-portal="billing"]'),
+    'one miss is tolerated',
+  );
+  await ticks[0]();
+  assert.equal(document.querySelector('[data-portal="billing"]'), null);
+  assert.ok(
+    document.querySelector(
+      '#composition-host [data-code="PORTAL_UNAVAILABLE"]',
+    ),
+  );
+  assert.deepEqual(events.at(-1), {
+    code: 'PORTAL_LOST',
+    portalId: 'billing',
+    mountId: 'm-1',
+  });
+});

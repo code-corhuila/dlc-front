@@ -13,9 +13,28 @@ const TYPES = {
   '.woff2': 'font/woff2',
 };
 const port = Number(process.env.PORT ?? 4180);
+// Same-origin proxy to the Clinical container (C01); demo by default.
+const clinical = process.env.CLINICAL_ORIGIN ?? 'http://localhost:4175';
+
+async function proxy(pathname, response) {
+  try {
+    const upstream = await fetch(clinical + pathname);
+    response.writeHead(upstream.status, {
+      'content-type':
+        upstream.headers.get('content-type') ?? 'application/octet-stream',
+      'cache-control': 'no-store',
+    });
+    response.end(Buffer.from(await upstream.arrayBuffer()));
+  } catch {
+    response.writeHead(502).end();
+  }
+}
 
 createServer(async (request, response) => {
-  const path = normalize(new URL(request.url, 'http://x').pathname);
+  const pathname = new URL(request.url, 'http://x').pathname;
+  if (pathname.startsWith('/portals/clinical/'))
+    return proxy(pathname, response);
+  const path = normalize(pathname);
   const isAsset = extname(path) !== '';
   const file = join('dist', isAsset ? path : 'index.html');
   try {

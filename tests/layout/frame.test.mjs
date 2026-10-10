@@ -19,6 +19,7 @@ function setup(user = admin, path = '/app/dashboard') {
     navigation: BASELINE_NAVIGATION,
     path,
     onLogout: () => calls.push('logout'),
+    onSearch: (term) => calls.push(`search:${term}`),
   });
   document.body.append(frame.root);
   return { document, frame, calls };
@@ -83,15 +84,50 @@ test('user identity is shown in the top bar and the sidebar footer', () => {
   assert.equal(document.querySelector('.dlc-role').textContent, 'ADMIN');
 });
 
-test('deferred search is rendered but disabled (C04)', () => {
-  const { document } = setup();
-  const search = document.querySelector('input[type="search"]');
+test('search submits the trimmed term to the owner route; empty is ignored', () => {
+  const { document, calls } = setup();
+  const form = document.querySelector('form[role="search"]');
+  const search = form.querySelector('input[type="search"]');
   assert.equal(
     search.getAttribute('placeholder'),
     'Buscar pacientes, citas...',
   );
-  assert.equal(search.disabled, true);
   assert.equal(search.getAttribute('aria-label'), 'Buscar pacientes, citas');
+  assert.equal(search.disabled, false);
+  search.value = '  ';
+  form.dispatchEvent(
+    new document.defaultView.Event('submit', { cancelable: true }),
+  );
+  search.value = ' patient-a ';
+  form.dispatchEvent(
+    new document.defaultView.Event('submit', { cancelable: true }),
+  );
+  assert.deepEqual(calls, ['search:patient-a']);
+});
+
+test('user chip opens a menu with identity, Inicio and Cerrar sesión', () => {
+  const { document, calls } = setup();
+  const chip = document.querySelector('button.dlc-user-chip');
+  const menu = document.querySelector('.dlc-user-menu');
+  assert.equal(chip.getAttribute('aria-haspopup'), 'menu');
+  assert.equal(chip.getAttribute('aria-expanded'), 'false');
+  assert.equal(menu.hidden, true);
+  chip.click();
+  assert.equal(chip.getAttribute('aria-expanded'), 'true');
+  assert.equal(menu.hidden, false);
+  assert.match(menu.textContent, /Administrador DI-LUCCA/);
+  assert.equal(
+    menu.querySelector('a[role="menuitem"]').getAttribute('href'),
+    '/',
+  );
+  document.dispatchEvent(
+    new document.defaultView.KeyboardEvent('keydown', { key: 'Escape' }),
+  );
+  assert.equal(menu.hidden, true);
+  chip.click();
+  menu.querySelector('button[role="menuitem"]').click();
+  assert.deepEqual(calls, ['logout']);
+  assert.equal(menu.hidden, true);
 });
 
 test('logout is a labelled shell action (C05)', () => {

@@ -17,6 +17,8 @@ export type FrameOptions = Readonly<{
   navigation: readonly NavigationDescriptor[];
   path: string;
   onLogout: () => void;
+  /** Global search: the term goes to the owner route; the shell aggregates no data. */
+  onSearch?: (term: string) => void;
 }>;
 
 export type Frame = Readonly<{
@@ -81,17 +83,59 @@ export function renderFrame(document: Document, options: FrameOptions): Frame {
   search.type = 'search';
   search.placeholder = 'Buscar pacientes, citas...';
   search.setAttribute('aria-label', 'Buscar pacientes, citas');
-  search.disabled = true; // Deferred by C04; shown as in the mockup.
-  const searchBox = el('label', 'dlc-search');
+  const searchBox = el('form', 'dlc-search');
+  searchBox.setAttribute('role', 'search');
   searchBox.append(icon(document, 'search'), search);
+  searchBox.addEventListener('submit', (event) => {
+    event.preventDefault();
+    const term = search.value.trim();
+    if (term) options.onSearch?.(term);
+  });
 
-  const chip = el('div', 'dlc-user-chip');
+  const chip = el('button', 'dlc-user-chip');
+  chip.type = 'button';
+  chip.setAttribute('aria-haspopup', 'menu');
+  chip.setAttribute('aria-expanded', 'false');
   const chipAvatar = el('span', 'dlc-avatar');
   const chipName = el('span', 'dlc-chip-name');
   chip.append(chipAvatar, chipName, icon(document, 'chevron'));
+
+  const menuName = el('p', 'dlc-menu-name');
+  const menuRole = el('p', 'dlc-menu-role');
+  const home = el('a', 'dlc-menu-item', 'Inicio');
+  home.href = '/';
+  home.setAttribute('role', 'menuitem');
+  const signOut = el('button', 'dlc-menu-item', 'Cerrar sesión');
+  signOut.type = 'button';
+  signOut.setAttribute('role', 'menuitem');
+  const menu = el('div', 'dlc-user-menu');
+  menu.setAttribute('role', 'menu');
+  menu.hidden = true;
+  menu.append(menuName, menuRole, home, signOut);
+  const account = el('div', 'dlc-account');
+  account.append(chip, menu);
+  const toggle = (open: boolean) => {
+    menu.hidden = !open;
+    chip.setAttribute('aria-expanded', String(open));
+  };
+  chip.addEventListener('click', () => toggle(menu.hidden));
+  home.addEventListener('click', () => toggle(false));
+  signOut.addEventListener('click', () => {
+    toggle(false);
+    options.onLogout();
+  });
+  document.addEventListener('keydown', (event) => {
+    if (event.key !== 'Escape' || menu.hidden) return;
+    toggle(false);
+    chip.focus();
+  });
+  document.addEventListener('click', (event) => {
+    if (!menu.hidden && !account.contains(event.target as Node)) toggle(false);
+  });
+
   const header = el('header', 'dlc-topbar');
   header.setAttribute('role', 'banner');
-  header.append(searchBox, chip);
+  header.append(searchBox, account);
 
   const host = el('section', 'dlc-host');
   host.id = 'composition-host';
@@ -126,8 +170,8 @@ export function renderFrame(document: Document, options: FrameOptions): Frame {
         return link;
       }),
     );
-    name.textContent = chipName.textContent = user.name;
-    role.textContent =
+    name.textContent = chipName.textContent = menuName.textContent = user.name;
+    role.textContent = menuRole.textContent =
       user.roles.map((r) => ROLE_BADGES[r]).find(Boolean) ?? '';
     avatar.textContent = initials(user.name, 2);
     chipAvatar.textContent = initials(user.name, 1);

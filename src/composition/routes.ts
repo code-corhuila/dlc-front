@@ -61,11 +61,11 @@ function toRoute(url: URL, basePath: string, localPath: string): PortalRoute {
 /** Selects the owner of a same-origin URL (C04); the portal interprets localPath. */
 export function resolveRoute(url: URL, authenticated: boolean): Resolution {
   const path = url.pathname;
-  // Owner decision: the public Home (mockup p. 1) replaces C04's anonymous redirect to Login.
-  if (path === '/')
-    return authenticated
-      ? { kind: 'redirect', to: DASHBOARD, replace: true }
-      : { kind: 'home' };
+  // Owner decision: the public Home (mockup p. 1) is the entry where the flow is chosen.
+  if (path === '/') return { kind: 'home' };
+  // A signed-in visitor does not need IAM Login again (C04: otherwise open dashboard).
+  if (authenticated && segments(path).join('/') === 'login')
+    return { kind: 'redirect', to: DASHBOARD, replace: true };
   if (segments(path).join('/') === 'app')
     return { kind: 'redirect', to: DASHBOARD, replace: true };
 

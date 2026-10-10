@@ -60,7 +60,11 @@ export function renderFrame(document: Document, options: FrameOptions): Frame {
 
   const logo = el('img', 'dlc-logo');
   logo.src = '/assets/logo.png';
-  logo.alt = 'DI LUCCA Dental Care & Technology';
+  logo.alt = '';
+  const logoLink = el('a', 'dlc-logo-link');
+  logoLink.href = '/';
+  logoLink.setAttribute('aria-label', 'DI LUCCA, inicio');
+  logoLink.append(logo);
 
   const logout = el('button', 'dlc-logout');
   logout.type = 'button';
@@ -77,7 +81,7 @@ export function renderFrame(document: Document, options: FrameOptions): Frame {
   footer.append(avatar, who, logout);
 
   const sidebar = el('aside', 'dlc-sidebar');
-  sidebar.append(logo, nav, footer);
+  sidebar.append(logoLink, nav, footer);
 
   const search = el('input', 'dlc-search-input');
   search.type = 'search';

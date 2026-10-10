@@ -17,10 +17,22 @@ export function createAuthPort() {
       expiresAt: new Date(Date.now() + 8 * 3600 * 1000).toISOString(),
     };
   };
+  let signedOut = false;
   return {
-    // In-memory only: a reload starts anonymous (no insecure storage, C05).
-    restore: async () => null,
+    // Nothing is stored in the browser (C05). An optional deployment file
+    // /dev-session.json ({"persona": "DENTIST"}) starts the preview signed in.
+    restore: async () => {
+      if (signedOut) return null;
+      const response = await fetch('/dev-session.json', {
+        cache: 'no-store',
+      }).catch(() => null);
+      if (!response?.ok) return null;
+      const { persona } = await response.json();
+      return PERSONAS[persona] ? establish(persona) : null;
+    },
     complete: async ({ body }) => establish(body?.persona),
-    logout: async () => undefined,
+    logout: async () => {
+      signedOut = true; // Stay signed out until the next page load.
+    },
   };
 }

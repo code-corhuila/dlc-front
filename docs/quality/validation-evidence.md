@@ -639,3 +639,15 @@ width; the mockup chip itself overflows the 1280 px page edge.
   (`feat/hu-iam-001-05`, `chore/front-shell-scaffold`) were deleted by mistake in that cleanup
   and restored immediately at their exact SHAs (`0c041bf`, `438a134`). `qa-front-shell-scaffold`
   (teammate, outside the 6.3 nomenclature) was not touched.
+
+## DEV-FRONT-DEMO-002
+
+- **Story:** HU-IAM-001, Issue #1, `code-corhuila/dlc-docs#47`.
+- **Change:** in the demo registry (`fixtures/`, development only) the Clinical-owned
+  "Historia clínica" descriptor points to `/app/clinical/patient-a`, so the sidebar opens the
+  Clinical record directly and the patient is chosen with Clinical's own demo selector. The demo
+  no longer depends on the Patients portal knowing Clinical's synthetic ids, avoiding a conflict
+  with the Patients team's own synthetic data.
+- **Request to the Clinical team:** offer patient selection in the `/app/clinical` prompt
+  ("Seleccione un paciente") so the descriptor can return to `/app/clinical`.
+- **TDD:** fixture data only; checked in the browser (container `:8080`, fixtures mounted).

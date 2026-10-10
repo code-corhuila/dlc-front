@@ -791,3 +791,16 @@ width; the mockup chip itself overflows the 1280 px page edge.
 - After the merge `git diff origin/qa origin/develop` is empty.
 - **Teacher bot review (norm 9.7–9.9):** PRs #6–#72 were checked through the GitHub API; none
   has bot review comments, reviews or inline findings, so there are no findings to answer yet.
+
+## DEV-FRONT-TELEMETRY-001
+
+- **Story:** HU-IAM-001, Issue #1, `code-corhuila/dlc-docs#47`.
+- **Change:** `src/core/telemetry/telemetry.ts` (C07, FC-17): events keep only an uppercase
+  code, stage, portal/release/mount/composition/correlation/trace ids matching a plain
+  identifier pattern, HTTP status and duration; everything else (queries, bodies, tokens,
+  messages, names, e-mails) is dropped; bounded in-memory log of recent events; a failing sink
+  is isolated. Wired in `main.ts` for portal failures (`reportFailure`, load/mount failures with
+  stage `load`) and failed HTTP results (code, status, correlation and trace ids; cancellations
+  skipped). The sink is the console until an ingestion endpoint is specified (none is invented).
+- **TDD:** telemetry tests failed first with `ERR_MODULE_NOT_FOUND` and the shell case failed
+  first (RED); all pass (GREEN).

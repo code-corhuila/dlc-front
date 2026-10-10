@@ -7,9 +7,10 @@ const auth = (href) => resolveRoute(new URL(href, 'https://dlc.test'), true);
 const anon = (href) => resolveRoute(new URL(href, 'https://dlc.test'), false);
 const owner = (r) => [r.kind, r.portalId, r.basePath, r.localPath];
 
-test('C04 + owner decision: anonymous / is the public Home; authenticated / is the dashboard', () => {
+test('owner decision: / is always the Home entry; signed-in /login opens the dashboard', () => {
   assert.deepEqual(anon('/'), { kind: 'home' });
-  assert.deepEqual(auth('/'), {
+  assert.deepEqual(auth('/'), { kind: 'home' });
+  assert.deepEqual(auth('/login'), {
     kind: 'redirect',
     to: '/app/dashboard',
     replace: true,
@@ -22,7 +23,7 @@ test('C04 + owner decision: anonymous / is the public Home; authenticated / is t
 });
 
 test('C01/C04: each owner prefix selects its portal with base and local path', () => {
-  assert.deepEqual(owner(auth('/login')), ['portal', 'iam', '/login', '/']);
+  assert.deepEqual(owner(anon('/login')), ['portal', 'iam', '/login', '/']);
   assert.deepEqual(owner(auth('/recover-password/step')), [
     'portal',
     'iam',

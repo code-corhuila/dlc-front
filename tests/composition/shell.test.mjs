@@ -121,8 +121,8 @@ async function setup(start, portals = {}, options = {}) {
 
 const text = (el) => el.textContent.replace(/\s+/g, ' ').trim();
 
-test('C04: "/" replaces to the dashboard; Clinical mounts Analytics in its host', async () => {
-  const { document, history } = await setup('/', {
+test('C04: "/app" replaces to the dashboard; Clinical mounts Analytics in its host', async () => {
+  const { document, history } = await setup('/app', {
     clinical: portal('clinical'),
   });
   assert.deepEqual(history.log, ['replace /app/dashboard']);
@@ -244,7 +244,7 @@ test('C04: same-origin link clicks are routed through the shell', async () => {
 });
 
 test('IAM public routes use the public frame; protected routes swap back', async () => {
-  const { document, shell } = await setup('/login', {
+  const { document, shell } = await setup('/recover-password', {
     iam: portal('iam'),
     billing: portal('billing'),
   });
@@ -261,7 +261,7 @@ test('IAM moving from /login to /app/administration remounts in the app frame', 
   const { document, shell } = await setup('/app/dashboard', {
     iam: portal('iam'),
   });
-  await shell.request({ path: '/login' });
+  await shell.request({ path: '/recover-password' });
   await shell.request({ path: '/app/administration' });
   assert.equal(document.querySelector('.dlc-dashboard'), null);
   assert.equal(document.querySelector('.dlc-public'), null);
@@ -365,4 +365,12 @@ test('Home: anonymous / renders the Home in the public frame without redirecting
   const { document, history } = await setup('/', {}, { authenticated: false });
   assert.equal(history.current().pathname, '/');
   assert.ok(document.querySelector('.dlc-public #public-host .dlc-home'));
+});
+
+test('owner decision: signed-in visitors still see the Home at / and skip Login', async () => {
+  const { document, history, shell } = await setup('/', {});
+  assert.equal(history.current().pathname, '/');
+  assert.ok(document.querySelector('.dlc-public .dlc-home'));
+  await shell.request({ path: '/login' });
+  assert.equal(history.current().pathname, '/app/dashboard');
 });

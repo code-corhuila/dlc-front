@@ -374,3 +374,44 @@ test('owner decision: signed-in visitors still see the Home at / and skip Login'
   await shell.request({ path: '/login' });
   assert.equal(history.current().pathname, '/app/dashboard');
 });
+
+test('C07: a down portal notice turns into "available" when its probe succeeds', async () => {
+  const window = new Window({ url: ORIGIN + '/app/billing' });
+  const { document } = window;
+  const frame = renderFrame(document, {
+    user,
+    navigation: BASELINE_NAVIGATION,
+    path: '/app/billing',
+    onLogout: () => {},
+  });
+  let tick;
+  const shell = createShell({
+    document,
+    frames: { app: frame, public: renderPublicFrame(document) },
+    root: document.body,
+    lifecycle: createLifecycle({
+      container: frame.host,
+      deadlines: { load: 50, mount: 50, update: 50, leave: 50, unmount: 50 },
+      uuid: () => 'id',
+      loadEntry: async () => {
+        throw new Error('down');
+      },
+      createContext: (b) => b,
+    }),
+    history: fakeHistory('/app/billing'),
+    isAuthenticated: () => true,
+    user: () => user,
+    navigation: () => BASELINE_NAVIGATION,
+    onRetry: () => {},
+    reload: () => {},
+    probe: async (id) => id === 'billing',
+    schedule: (fn) => {
+      tick = fn;
+      return () => {};
+    },
+  });
+  await shell.start();
+  assert.ok(document.querySelector('[data-code="PORTAL_UNAVAILABLE"]'));
+  await tick();
+  assert.ok(document.querySelector('[data-code="PORTAL_AVAILABLE"]'));
+});

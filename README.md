@@ -29,6 +29,8 @@ through the framework-neutral **composition contract v1** (dlc-docs
 4. A failing or stopped portal only shows a local "Esta sección no está disponible" card; when
    its entry answers again the card offers "Actualizar" (C07).
 
+Step-by-step rules for portal teams: `docs/integration/portal-integration-guide.md`.
+
 ## Source layout
 
 | Path | Responsibility |

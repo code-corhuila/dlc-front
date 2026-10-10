@@ -726,3 +726,14 @@ width; the mockup chip itself overflows the 1280 px page edge.
 - **Browser check (container `:8080`, 440×956 as the reported iPhone 16 Pro Max):** no horizontal
   scroll (scroll width 440 = client width), Login visible at x 356, hero 440×426, footer stacked;
   desktop 1280 px layout unchanged (rules only apply ≤ 720 px).
+
+## DEV-FRONT-GUIDE-001
+
+- **Story:** HU-IAM-001, Issue #1, `code-corhuila/dlc-docs#47`.
+- **Change:** `docs/integration/portal-integration-guide.md` for the portal teams: what to
+  publish (C01), mount and handle (C02/C03), the context members as implemented, rules that avoid
+  conflicts between portals (CSS prefixes, no shared runtime, navigation only through the
+  capability, roles from the session, one shared synthetic dataset from the OpenAPI examples),
+  a pre-registration checklist and the front team's registration steps. Linked from the README.
+- **TDD:** documentation only; context members checked against `src/main.ts` and
+  `src/composition/shell.ts`.

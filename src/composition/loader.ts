@@ -53,9 +53,8 @@ export function createEntryLoader(deps: LoaderDeps) {
     }
   }
 
-  /** C07: HEAD of the selected entry, no import, no cache; false when not available. */
-  async function probe(portalId: PortalId): Promise<boolean> {
-    if (!importFailed.has(portalId)) return false;
+  /** HEAD of the selected entry, no import, no cache; false when not available. */
+  async function reachable(portalId: PortalId): Promise<boolean> {
     const current = await registry();
     const entry = current.ok ? current.portals[portalId] : undefined;
     if (entry?.status !== 'available') return false;
@@ -72,6 +71,10 @@ export function createEntryLoader(deps: LoaderDeps) {
     }
   }
 
+  /** C07 recovery probe: only after a failed import (a mount failure is not fixed by it). */
+  const probe = async (portalId: PortalId) =>
+    importFailed.has(portalId) && reachable(portalId);
+
   /** Latest published registry revision, or null when unreadable. */
   async function revision(): Promise<string | null> {
     const latest = await fetchRegistry();
@@ -81,6 +84,7 @@ export function createEntryLoader(deps: LoaderDeps) {
   return {
     registry,
     probe,
+    reachable,
     markImportFailed: (portalId: PortalId) => void importFailed.add(portalId),
     revision,
     loadEntry,

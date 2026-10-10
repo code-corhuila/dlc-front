@@ -10,7 +10,7 @@ import {
 } from './core/session/session.ts';
 import { renderFrame } from './layout/frame.ts';
 import { orderNavigation } from './layout/navigation.ts';
-import { renderServiceError } from './layout/pages.ts';
+import { renderServiceError, renderUpdateBanner } from './layout/pages.ts';
 import { renderPublicFrame } from './layout/publicFrame.ts';
 
 const NO_USER = { id: '', name: '', roles: [], permissions: [] };
@@ -125,6 +125,7 @@ async function boot() {
     navigation: () => navigation,
     onRetry: loader.invalidate,
     reload: () => location.reload(),
+    probe: loader.probe,
     telemetry: (event) => console.info('dlc-front', event),
   });
   session.subscribe(() => {
@@ -132,6 +133,14 @@ async function boot() {
     void shell.sessionChanged();
   });
   await shell.start();
+
+  // New releases are announced, never applied silently (registry stays no-store, C01).
+  const timer = setInterval(async () => {
+    const latest = await loader.revision();
+    if (latest === null || latest === registry.revision) return;
+    clearInterval(timer);
+    document.body.append(renderUpdateBanner(document, () => location.reload()));
+  }, 30000);
 }
 
 void boot();

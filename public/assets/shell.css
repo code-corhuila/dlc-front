@@ -604,3 +604,20 @@ button.dlc-user-chip {
   display: block;
   width: fit-content;
 }
+
+/* Registry revision change: explicit reload offer (bottom-right toast). */
+.dlc-update-banner {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 12px 16px;
+  border: 1px solid #d6dee2;
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.14);
+  font: 14px var(--dlc-font);
+}

@@ -5,6 +5,8 @@ export type TargetResult =
   | Readonly<{ ok: false; error: 'INVALID_ROUTE' }>;
 
 const INVALID: TargetResult = { ok: false, error: 'INVALID_ROUTE' };
+// Slashes and their confusables; NFKC already folds fullwidth forms and dots (bot finding #5.1).
+const SEPARATORS = /[/\\⁄∕⧸⧹]/u;
 
 /** C04 `navigation.request` target: a recognized same-origin absolute path. */
 export function validateNavigationTarget(
@@ -23,11 +25,11 @@ export function validateNavigationTarget(
   for (const segment of pathname.slice(1).split('/')) {
     let decoded: string;
     try {
-      decoded = decodeURIComponent(segment);
+      decoded = decodeURIComponent(segment).normalize('NFKC');
     } catch {
       return INVALID;
     }
-    if (decoded === '.' || decoded === '..' || /[/\\]/u.test(decoded))
+    if (decoded === '.' || decoded === '..' || SEPARATORS.test(decoded))
       return INVALID;
   }
   const url = new URL(path, origin);

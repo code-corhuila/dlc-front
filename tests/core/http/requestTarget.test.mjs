@@ -156,3 +156,13 @@ test('rejects malformed boundary values with a controlled result', () => {
     assert.deepEqual(validateRequestTarget(input), invalid);
   }
 });
+
+test('bot finding #5.1: Unicode separators that normalize to /, backslash or dot-segments are rejected', () => {
+  for (const path of [
+    '/api/v1/a%EF%BC%8Fb', // U+FF0F fullwidth solidus
+    '/api/v1/a%E2%88%95b', // U+2215 division slash
+    '/api/v1/a%EF%BC%BCb', // U+FF3C fullwidth reverse solidus
+    '/api/v1/%EF%BC%8E%EF%BC%8E', // fullwidth ".."
+  ])
+    assert.deepEqual(validateRequestTarget({ path }), invalid, path);
+});

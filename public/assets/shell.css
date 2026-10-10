@@ -445,3 +445,8 @@ body {
 .dlc-analytics-host + .dlc-shortcuts {
   margin-top: 32px;
 }
+
+/* Service error cards inside the public frame keep the 404 card look, centred. */
+.dlc-public-host > .dlc-state {
+  margin: 64px auto;
+}

@@ -443,3 +443,22 @@ width; the mockup chip itself overflows the 1280 px page edge.
 - **Browser check (`npm run preview`):** `/app/clinical/patient-a` opens directly as
   Dra. Valentina Ruiz with the Clinical record; Logout → `/login`.
 - **Replacement:** removed together with the Auth double when IAM/Auth exist.
+
+## DEV-FRONT-ERRORS-001
+
+- **Story:** HU-IAM-001, Issue #1, `code-corhuila/dlc-docs#47`.
+- **Change:** full-page service error states with the same card as the global 404 (heading,
+  message, one action), built by `renderServiceError` in `src/layout/pages.ts`:
+  - `SESSION_UNAVAILABLE` (C05: Auth unreachable or malformed) — public frame, requested URL
+    kept, "Reintentar" re-runs session resolution; protected content is never mounted.
+  - `SESSION_EXPIRED` (C05) — "Iniciar sesión" to `/login`; the safe return is preserved.
+  - `REGISTRY_UNAVAILABLE` (C07) — app frame kept, no entry loaded, "Reintentar".
+  - `UNSUPPORTED_BROWSER` (C01/FC-18) — missing AbortController, BroadcastChannel, History,
+    Web Locks or `crypto.randomUUID`; no insecure fallback.
+  The local PORTAL_UNAVAILABLE notice keeps the same card style inside the portal area.
+- **TDD:** the pages case failed first (missing export, RED) and the shell case failed first
+  (1 failure, RED); both pass after the change.
+- **Browser check (`npm run preview`, 1280×917), forcing each state with temporary fixture
+  copies restored afterwards:** malformed `dev-session.json` → "Servicio de autenticación no
+  disponible" at `/app/clinical/patient-a` in the public frame; invalid `portal-registry.json`
+  → "Servicios no disponibles" inside the app frame.

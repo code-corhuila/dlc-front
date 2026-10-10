@@ -5,6 +5,7 @@ import { createLifecycle } from '../../src/composition/lifecycle.ts';
 import { createShell } from '../../src/composition/shell.ts';
 import { renderFrame } from '../../src/layout/frame.ts';
 import { BASELINE_NAVIGATION } from '../../src/layout/navigation.ts';
+import { renderPublicFrame } from '../../src/layout/publicFrame.ts';
 
 const ORIGIN = 'https://dlc.test';
 const uuid = '3f2504e0-4f89-41d3-9a0c-0305e82c3301';
@@ -80,7 +81,7 @@ async function setup(start, portals = {}, { authenticated = true } = {}) {
     path: start,
     onLogout: () => {},
   });
-  document.body.append(frame.root);
+  const publicFrame = renderPublicFrame(document);
   let n = 0;
   const retries = [];
   const lifecycle = createLifecycle({
@@ -96,7 +97,8 @@ async function setup(start, portals = {}, { authenticated = true } = {}) {
   const history = fakeHistory(start);
   const shell = createShell({
     document,
-    frame,
+    frames: { app: frame, public: publicFrame },
+    root: document.body,
     lifecycle,
     history,
     isAuthenticated: () => authenticated,
@@ -231,4 +233,29 @@ test('C04: same-origin link clicks are routed through the shell', async () => {
   document.querySelector('.dlc-shortcut[href="/app/billing"]').click();
   await new Promise((resolve) => setTimeout(resolve, 20));
   assert.equal(history.current().pathname, '/app/billing');
+});
+
+test('IAM public routes use the public frame; protected routes swap back', async () => {
+  const { document, shell } = await setup('/login', {
+    iam: portal('iam'),
+    billing: portal('billing'),
+  });
+  assert.ok(
+    document.querySelector('.dlc-public #public-host [data-portal="iam"]'),
+  );
+  assert.equal(document.querySelector('.dlc-shell'), null);
+  await shell.request({ path: '/app/billing' });
+  assert.equal(document.querySelector('.dlc-public'), null);
+  assert.ok(document.querySelector('.dlc-shell [data-portal="billing"]'));
+});
+
+test('IAM moving from /login to /app/administration remounts in the app frame', async () => {
+  const { document, shell } = await setup('/app/dashboard', {
+    iam: portal('iam'),
+  });
+  await shell.request({ path: '/login' });
+  await shell.request({ path: '/app/administration' });
+  assert.equal(document.querySelector('.dlc-dashboard'), null);
+  assert.equal(document.querySelector('.dlc-public'), null);
+  assert.ok(document.querySelector('.dlc-shell [data-portal="iam"]'));
 });

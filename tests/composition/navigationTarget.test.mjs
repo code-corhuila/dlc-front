@@ -42,3 +42,8 @@ test('C04: dot-segments, malformed or encoded separators are INVALID_ROUTE', () 
 test('C04: unknown global paths are not recognized targets', () => {
   assert.deepEqual(ok('/app/unknown'), invalid);
 });
+
+test('bot finding #5.1: Unicode confusable separators are INVALID_ROUTE', () => {
+  assert.deepEqual(ok('/app/billing%EF%BC%8Finvoices'), invalid);
+  assert.deepEqual(ok('/app/%EF%BC%8E%EF%BC%8E/login'), invalid);
+});

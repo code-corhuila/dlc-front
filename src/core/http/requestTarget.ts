@@ -17,7 +17,8 @@ export function validateRequestTarget(input: unknown): TargetValidation {
   for (const segment of path.slice(1).split('/')) {
     let decoded: string;
     try {
-      decoded = decodeURIComponent(segment);
+      // NFKC folds confusables (U+FF0F, U+2215, fullwidth dots) into the separators they mimic.
+      decoded = decodeURIComponent(segment).normalize('NFKC');
     } catch {
       return invalid;
     }
@@ -27,7 +28,7 @@ export function validateRequestTarget(input: unknown): TargetValidation {
       decoded === '.' ||
       decoded === '..' ||
       // eslint-disable-next-line no-control-regex -- C06 rejects control characters on purpose
-      /[\s\u0000-\u001f\u007f/\\?#%]/u.test(decoded)
+      /[\s\u0000-\u001f\u007f/\\?#%⁄∕⧸⧹]/u.test(decoded)
     )
       return invalid;
   }

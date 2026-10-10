@@ -43,6 +43,7 @@ body {
   width: 256px;
   height: 100vh;
   box-sizing: border-box;
+  overflow-y: auto;
   background: var(--dlc-sidebar-bg);
   border-right: 1px solid var(--dlc-line);
 }
@@ -171,7 +172,7 @@ body {
   justify-content: flex-end;
   gap: 24px;
   height: 63px;
-  padding: 0 0 0 24px;
+  padding: 0 24px;
   box-sizing: border-box;
   border-bottom: 1px solid var(--dlc-line);
 }
@@ -180,7 +181,8 @@ body {
   display: flex;
   align-items: center;
   gap: 10px;
-  width: 372px;
+  flex: 0 1 372px;
+  min-width: 0;
   height: 38px;
   padding: 0 12px;
   box-sizing: border-box;
@@ -207,7 +209,6 @@ body {
   align-items: center;
   gap: 8px;
   height: 38px;
-  margin-right: -23px;
   padding: 0 14px 0 12px;
   border: 1px solid #e5e7eb;
   border-radius: 19px;
@@ -485,4 +486,46 @@ a.dlc-public-link:hover {
   overflow: hidden;
   clip-path: inset(50%);
   white-space: nowrap;
+}
+
+/* Fit smaller screens: the 1280×917 mockup measures are kept above these breakpoints. */
+@media (max-height: 760px) {
+  .dlc-logo {
+    width: 116px;
+    margin: 20px 0 14px 36px;
+  }
+
+  .dlc-nav-item {
+    height: 40px;
+  }
+
+  .dlc-sidebar-user {
+    padding: 14px 24px;
+  }
+}
+
+@media (max-width: 960px) {
+  .dlc-sidebar {
+    flex-basis: 72px;
+    width: 72px;
+  }
+
+  .dlc-logo,
+  .dlc-nav-item span,
+  .dlc-sidebar-who {
+    display: none;
+  }
+
+  .dlc-nav {
+    margin-top: 16px;
+  }
+
+  .dlc-sidebar-user {
+    flex-direction: column;
+    padding: 14px 0;
+  }
+
+  .dlc-chip-name {
+    display: none;
+  }
 }

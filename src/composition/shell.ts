@@ -35,6 +35,12 @@ export type ShellDeps = Readonly<{
   navigation: () => readonly NavigationDescriptor[];
   onRetry: () => void;
   reload: () => void;
+  /** Safe C07 record: code and identifiers only, never content or credentials. */
+  telemetry?: (event: {
+    code: string;
+    portalId: PortalId;
+    mountId: string;
+  }) => void;
 }>;
 
 export type RequestStatus = Readonly<{
@@ -52,6 +58,7 @@ export function createShell(deps: ShellDeps) {
   let safeReturn: string | null = null;
   let suppressPop = false;
   let last: Promise<unknown> = Promise.resolve();
+  let authenticated = deps.isAuthenticated();
 
   function commit(url: URL, mode: Mode, popIndex: number) {
     if (mode === 'push') history.push(url, ++index);
@@ -147,11 +154,13 @@ export function createShell(deps: ShellDeps) {
       frame.host.replaceChildren(page.root);
       commit(url, mode, popIndex);
       focusContent();
-      await mountInto(
+      const analytics = await mountInto(
         resolution.portalId,
         resolution.route,
         page.analyticsHost,
       );
+      // Clinical renders the mockup header itself; the shell heading stays for focus only.
+      if (analytics.status === 'active') page.root.dataset.analytics = 'active';
       return 'applied';
     }
     frame.host.replaceChildren(renderNotFound(document));
@@ -164,6 +173,41 @@ export function createShell(deps: ShellDeps) {
     const pending = transition(url, mode, popIndex);
     last = pending;
     return pending;
+  }
+
+  /** C07: the live mount reported a fatal failure; end it and contain it locally. */
+  async function reportFailure(mountId: string, failure: unknown) {
+    const code = (failure as { code?: unknown } | null)?.code;
+    if (code !== 'PORTAL_RENDER_FAILED' && code !== 'PORTAL_TASK_FAILED')
+      return false;
+    const portalId = lifecycle.state().portalId;
+    const container = await lifecycle.fail(mountId);
+    if (!container || !portalId) return false;
+    deps.telemetry?.({ code, portalId, mountId });
+    if (container === frame.host) slot = null;
+    notice(container, { status: 'failed', code: 'PORTAL_UNAVAILABLE' });
+    return true;
+  }
+
+  /** C05: session ended → forced cleanup and Login; established → safe return once. */
+  async function sessionChanged() {
+    const now = deps.isAuthenticated();
+    if (now === authenticated) return;
+    authenticated = now;
+    const current = history.current();
+    if (!now) {
+      await lifecycle.clear();
+      slot = null;
+      frame.host.replaceChildren();
+      await run(current, 'replace');
+      return;
+    }
+    const back = safeReturn;
+    safeReturn = null;
+    const resolved = resolveRoute(current, true);
+    const onPublic = resolved.kind === 'portal' && !resolved.protected;
+    const target = back ?? (onPublic ? '/app/dashboard' : null);
+    await run(target ? new URL(target, current) : current, 'replace');
   }
 
   async function request(input: {
@@ -212,6 +256,8 @@ export function createShell(deps: ShellDeps) {
   return {
     start: () => run(history.current(), 'replace'),
     request,
+    reportFailure,
+    sessionChanged,
     /** Safe return pathname, consumed once on session establishment (C04). */
     consumeReturn: () => {
       const value = safeReturn;

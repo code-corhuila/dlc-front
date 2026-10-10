@@ -367,3 +367,40 @@ width; the mockup chip itself overflows the 1280 px page edge.
 - **TDD:** `tests/core/session/session.test.mjs` failed first with `ERR_MODULE_NOT_FOUND` (RED);
   after implementation 8/8 pass (GREEN). Covers the C05 parts of FC-09, FC-11 and FC-12.
 - **Validation:** typecheck, lint, format:check, test, test:coverage, build: results in the PR.
+
+## DEV-FRONT-CLINICAL-001
+
+- **Story:** HU-IAM-001, Issue #1, `code-corhuila/dlc-docs#47`.
+- **Change:** integration of the real Clinical entry (`dlc-clinical-portal` `develop` `84becf5`)
+  through the registry, with the C05 session and C07 failure capabilities in the portal context:
+  - `src/main.ts`: session from an `AuthPort`; the development Auth double is loaded only from
+    `/dev-auth.js`, which exists solely in `fixtures/` (local preview), otherwise the session is
+    unavailable; context adds `session` (scoped, read-only), `reportFailure`, and `iamSession`
+    for IAM only; frame identity and menu follow the session.
+  - Shell: `reportFailure(mountId, {code})` ends only the live mount (lifecycle `fail`), shows
+    the local PORTAL_UNAVAILABLE notice and records `{code, portalId, mountId}`;
+    `sessionChanged()` force-cleans private content and goes to Login on logout, and returns to
+    the safe path once on sign-in.
+  - Frame `setUser` re-renders role menu and identity. Dashboard: Analytics host before the
+    shortcuts; when Clinical is active the shell heading becomes visually hidden (still focusable)
+    because Clinical renders the mockup header.
+  - Preview: `/portals/clinical/` proxied same-origin to `CLINICAL_ORIGIN` (default
+    `http://localhost:4175`, `clinical-portal-demo`) with `no-store`; registry entry
+    `clinical` `0.1.0-demo`; the IAM double offers the development sign-in (DENTIST,
+    ADMINISTRATOR, SECRETARY_ASSISTANT with the Clinical demo staff ids) through
+    `iamSession.complete`. The Clinical test double was removed.
+- **TDD:** new cases failed first (RED) and pass after the change: lifecycle `fail` (1),
+  frame `setUser` (1), shell `reportFailure`/`sessionChanged` (2) and dashboard delegation (1).
+- **Browser verification (`npm run build` + `npm run preview`, Clinical containers up,
+  1280×917):** anonymous `/app/clinical/patient-a` → `/login` with the dev sign-in; DENTIST →
+  back to `/app/clinical/patient-a`, Clinical record of Ana García Rodríguez (plan, diagnoses,
+  evolution) rendered from `/portals/clinical/0.1.0-demo/entry.js` + `entry.css`; menu without
+  Gestión de usuarios. Link to `/app/clinical/patient-b` → same host instance (`updateRoute`).
+  Leaving to Facturación → no Clinical root or stylesheet left in the DOM (clean `unmount`).
+  Logout → `/login`, no private frame left. ADMINISTRATOR → safe return, full menu; Dashboard
+  shows Panel, greeting, Citas de hoy, Pacientes pendientes, Ingresos del mes, Actividad semanal
+  and Próximas citas as in mockup p. 4; SECRETARY_ASSISTANT sees no Ingresos del mes.
+- **Observations for the Clinical team:** the demo build shows its own role/patient selector
+  inside the record; in the composed shell the role comes from the session.
+- **Limitations:** no C06 `http` capability in the context yet; deploy nginx/compose proxy comes
+  in the deployment increment.

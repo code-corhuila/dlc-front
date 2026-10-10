@@ -119,3 +119,27 @@ test('C04: setActive moves aria-current; main is a focus fallback', () => {
   assert.equal(document.querySelectorAll('nav a[aria-current]').length, 0);
   assert.equal(frame.main.getAttribute('tabindex'), '-1');
 });
+
+test('C05: setUser re-renders the role menu and identity for a new persona', () => {
+  const { document, frame } = setup(admin, '/app/administration');
+  frame.setUser({
+    id: 'u-2',
+    name: 'Laura Secretaría',
+    roles: ['SECRETARY_ASSISTANT'],
+    permissions: [],
+  });
+  const labels = [...document.querySelectorAll('nav a')].map((a) =>
+    a.textContent.trim(),
+  );
+  assert.equal(labels.includes('Administración'), false);
+  assert.equal(
+    document.querySelector('.dlc-chip-name').textContent,
+    'Laura Secretaría',
+  );
+  assert.equal(
+    document.querySelector('.dlc-sidebar-user .dlc-avatar').textContent,
+    'LA',
+  );
+  assert.equal(document.querySelector('.dlc-role').textContent, 'SECRETARÍA');
+  assert.equal(document.querySelectorAll('nav a[aria-current]').length, 0);
+});

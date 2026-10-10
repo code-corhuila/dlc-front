@@ -82,20 +82,37 @@ const segments = (path: string) => path.split('/').filter(Boolean);
 const ownerBase = (item: NavigationDescriptor) =>
   segments(item.path).slice(0, 2);
 
+/** Most specific entry whose path prefixes the URL; otherwise the owner's default entry. */
 export function activeItemId(
   items: readonly NavigationDescriptor[],
   pathname: string,
 ): string | null {
   const current = segments(pathname);
-  const match = items.find((item) =>
-    ownerBase(item).every((segment, index) => current[index] === segment),
-  );
-  return match ? match.id : null;
+  const covers = (parts: string[]) =>
+    parts.every((segment, index) => current[index] === segment);
+  const depth = (item: NavigationDescriptor) => segments(item.path).length;
+  const exact = items
+    .filter((item) => covers(segments(item.path)))
+    .sort((a, b) => depth(b) - depth(a))[0];
+  const owner = items
+    .filter((item) => covers(ownerBase(item)))
+    .sort((a, b) => depth(a) - depth(b))[0];
+  return (exact ?? owner)?.id ?? null;
 }
 
-const ORDER = BASELINE_NAVIGATION.map((item) => item.id);
+// Mockup sidebar order; owner sub-areas (procedures, availability) follow their owners.
+const ORDER = [
+  'dashboard',
+  'patients',
+  'procedures',
+  'appointments',
+  'availability',
+  'clinical',
+  'billing',
+  'administration',
+];
 
-/** Owner-supplied descriptors in the C04 baseline sidebar order; others follow. */
+/** Owner-supplied descriptors in the mockup sidebar order; unknown ids follow. */
 export function orderNavigation(
   items: readonly NavigationDescriptor[],
 ): NavigationDescriptor[] {

@@ -17,6 +17,13 @@ server {
 ";
   }
 
+  # Gateway (C06): the only API upstream; demo uses the Prism mock (profile "mock").
+  location ~ ^/api/v1/(.*)$ {
+    set $gateway ${GATEWAY_UPSTREAM};
+    proxy_pass $gateway/$1$is_args$args;
+    add_header Cache-Control "no-store" always;
+  }
+
   # Same-origin proxy to the Clinical container (C01).
   location ^~ /portals/clinical/ {
     set $clinical ${CLINICAL_UPSTREAM};

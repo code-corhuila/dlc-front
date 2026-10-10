@@ -238,3 +238,21 @@ width; the mockup chip itself overflows the 1280 px page edge.
   Appointments entry import and the manual missing-entry check).
 - **Limitations:** fixed ADMINISTRATOR persona until the C05 session port; HTTP capability (C06)
   and `reportFailure` (C07) are not yet in the portal context.
+
+## DEV-FRONT-GATES-002
+
+- **Story:** HU-IAM-001, Issue #1, `code-corhuila/dlc-docs#47`.
+- **Change:** `scripts/pr-gates.mjs` aligned with the promotion procedure before the first
+  promotion to `qa`:
+  - **Controlled feeder exception:** `promotion/*` is admitted only toward `qa`. Git cannot hold
+    `refs/heads/qa/*` while `refs/heads/qa` exists, so the literal `qa/*` prefix of norm 6.3.1
+    cannot be created; the project owner instructed `promotion/*` (same exception used in
+    dlc-clinical-portal, QA-CLIN-PORTAL-QUALITY-001). This record does **not** claim literal
+    `qa/*` compliance. Promotion mechanics are unchanged: branch from `qa`, `git cherry-pick -x`,
+    PR back into `qa`, no permanent-branch merge (norm 10).
+  - **Commit subject:** the scope is now optional, exactly the norm 15.2 audit expression; the
+    previous gate was stricter than the norm and would reject conformant commits already in
+    `develop` (e.g. `docs: correct scaffold documentation references`).
+- **TDD:** two new cases in `tests/scripts/pr-gates.test.mjs` failed first (RED, 2 failures);
+  after the change 8/8 pass (GREEN).
+- **Validation:** typecheck, lint, format:check, test, test:coverage, build: results in the PR.

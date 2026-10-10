@@ -502,3 +502,17 @@ width; the mockup chip itself overflows the 1280 px page edge.
 - **Patients portal:** `code-corhuila/dlc-patient-portal` `develop` `ab65ce9` has empty
   `deploy/compose.yml`, `deploy/nginx.conf` and `federation.config.js` and no contract v1
   entry (`portalId`, `contractVersion`, `mount`), so it cannot be registered yet (C01–C03).
+
+## DEV-FRONT-DEMO-001
+
+- **Story:** HU-IAM-001, Issue #1, `code-corhuila/dlc-docs#47`.
+- **Change:** the Patients C02 test double (`fixtures/`, preview/demo only) lists the synthetic
+  patients already defined by the Clinical demo build (`patient-a` … `patient-d`, generic
+  labels, no personal data) and opens each record through the C04 `navigation.request`
+  capability. `docs/demo/clinical-dashboard-demo.md` describes how to start the front-only demo
+  and the script per role, including live failure cases.
+- **TDD:** fixture and documentation only; verified in the browser.
+- **Browser run (`npm run preview`, Clinical demo container up, 1280×917, DENTIST):**
+  Pacientes → patient-a record (Historia clínica active); Pacientes → patient-c → Clinical shows
+  "Acceso denegado"; Back → `/app/patients`. Steps 9–14 of the script were verified in
+  DEV-FRONT-CLINICAL-001, DEV-FRONT-DEPLOY-001 and DEV-FRONT-WIRING-001.

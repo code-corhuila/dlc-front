@@ -760,3 +760,23 @@ width; the mockup chip itself overflows the 1280 px page edge.
   9/9 pass (GREEN) with a transport double, no network. Covers FC-13 and FC-14.
 - **Limitations:** the operation catalogue from the OpenAPI contracts and the per-mount
   `context.http` capability come in the next increments.
+
+## DEV-FRONT-HTTP-002
+
+- **Story:** HU-IAM-001, Issue #1, `code-corhuila/dlc-docs#47`.
+- **Change:**
+  - `scripts/generate-catalog.mjs` derives the C06 operation catalogue from the Gateway-facing
+    contract `07-api/contracts/openapi/api-gateway.yaml` and its owner contracts (dlc-docs
+    `638e4f2`): 70 operations on 57 paths with method, path template, security-empty (public)
+    and `Idempotency-Key` requirement, written to `src/core/http/__generated__/catalog.ts`
+    (generated; only derived method/path/security data, no documentation copied).
+  - `src/core/http/catalog.ts`: unknown operations rejected; refresh, logout, CSRF and MFA
+    completion never available as generic HTTP (C05 controls); public Auth operations only for
+    IAM; required `Idempotency-Key` of 8–128 characters (norm 5.3.8).
+  - `src/core/http/capability.ts`: frozen per-mount `context.http`, catalogue-checked, sets the
+    security class, combines the caller signal with the mount signal and rejects `CANCELLED`
+    after unmount. Wired in `src/main.ts` for every portal.
+  - Until the Auth adapter exists the client has no access token, so protected calls return
+    `SESSION_UNAVAILABLE` locally; nginx has no `/api/v1` upstream yet (no Gateway).
+- **TDD:** `tests/core/http/catalog.test.mjs` failed first with `ERR_MODULE_NOT_FOUND` (RED);
+  5/5 pass (GREEN). Covers FC-13 (catalogue part) and FC-16 (no frontend authority).

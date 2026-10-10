@@ -1,0 +1,2 @@
+# Node ESM scripts start with a shebang; CRLF breaks them on Windows.
+*.mjs text eol=lf

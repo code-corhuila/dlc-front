@@ -780,3 +780,48 @@ width; the mockup chip itself overflows the 1280 px page edge.
     `SESSION_UNAVAILABLE` locally; nginx has no `/api/v1` upstream yet (no Gateway).
 - **TDD:** `tests/core/http/catalog.test.mjs` failed first with `ERR_MODULE_NOT_FOUND` (RED);
   5/5 pass (GREEN). Covers FC-13 (catalogue part) and FC-16 (no frontend authority).
+
+## QA-FRONT-PROMOTION-005
+
+- PR #67 (`promotion/qa-front-24`): `ec0ebc4`… responsive Home and integration guide.
+- PR #70 (`promotion/qa-front-25`) failed the size gate (408/400) with both HTTP commits and
+  was closed without merge; the same commits were promoted separately:
+  PR #71 (`promotion/qa-front-26`, `76f0433`) and PR #72 (`promotion/qa-front-27`, `901f101`),
+  both green and merged; feeder branches deleted.
+- After the merge `git diff origin/qa origin/develop` is empty.
+- **Teacher bot review (norm 9.7–9.9):** PRs #6–#72 were checked through the GitHub API; none
+  has bot review comments, reviews or inline findings, so there are no findings to answer yet.
+
+## DEV-FRONT-TELEMETRY-001
+
+- **Story:** HU-IAM-001, Issue #1, `code-corhuila/dlc-docs#47`.
+- **Change:** `src/core/telemetry/telemetry.ts` (C07, FC-17): events keep only an uppercase
+  code, stage, portal/release/mount/composition/correlation/trace ids matching a plain
+  identifier pattern, HTTP status and duration; everything else (queries, bodies, tokens,
+  messages, names, e-mails) is dropped; bounded in-memory log of recent events; a failing sink
+  is isolated. Wired in `main.ts` for portal failures (`reportFailure`, load/mount failures with
+  stage `load`) and failed HTTP results (code, status, correlation and trace ids; cancellations
+  skipped). The sink is the console until an ingestion endpoint is specified (none is invented).
+- **TDD:** telemetry tests failed first with `ERR_MODULE_NOT_FOUND` and the shell case failed
+  first (RED); all pass (GREEN).
+
+## DEV-FRONT-MOCK-001
+
+- **Story:** HU-IAM-001, Issue #1, `code-corhuila/dlc-docs#47`.
+- **Change:**
+  - `deploy/compose.yml`: demo-only `mock-gateway` service (profile `mock`,
+    `stoplight/prism:5` pinned by digest) serving `api-gateway.yaml` and its owner contracts
+    from the local dlc-docs folder mounted read-only (`DLC_DOCS_OPENAPI`); nothing from dlc-docs
+    is copied. Responses are Prism's static examples from the contract schemas (synthetic).
+  - `deploy/nginx.conf.template`: `/api/v1/` proxied to `${GATEWAY_UPSTREAM}` (per-request
+    resolution, `no-store`); a real Gateway is configured with its `/api/v1` base.
+  - `AuthPort.accessToken` (optional, private to the HTTP client); the development Auth double
+    returns an opaque synthetic value accepted by the mock (presence check only). The token is
+    never part of the session snapshot or the portal context.
+- **Verification (`--profile mock up --build -d`, browser at `:8080`, compiled client and
+  capability imported in the page):** `GET /api/v1/patients` via the Patients capability → 200
+  with a `data` array and a correlation id; Auth login from Patients → `INVALID_REQUEST`, create
+  without `Idempotency-Key` → `INVALID_REQUEST`, no token → `SESSION_UNAVAILABLE` (only the valid
+  call reached the network); without `Authorization` the mock answers 401; mock stopped → 502
+  mapped to `INVALID_RESPONSE`, retryable read, central "servicio no disponible" message.
+- **TDD:** configuration and fixture wiring; existing 132 tests pass; verified by commands above.

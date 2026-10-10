@@ -30,6 +30,8 @@ export function createAuthPort() {
       const { persona } = await response.json();
       return PERSONAS[persona] ? establish(persona) : null;
     },
+    // Opaque synthetic value accepted by the demo mock Gateway (presence check only).
+    accessToken: () => (signedOut ? null : 'dev-synthetic-access'),
     complete: async ({ body }) => establish(body?.persona),
     logout: async () => {
       signedOut = true; // Stay signed out until the next page load.

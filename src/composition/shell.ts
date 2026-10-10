@@ -45,11 +45,8 @@ export type ShellDeps = Readonly<{
   probe?: (portalId: PortalId) => Promise<boolean>;
   schedule?: (tick: () => Promise<void>, ms: number) => () => void;
   /** Safe C07 record: code and identifiers only, never content or credentials. */
-  telemetry?: (event: {
-    code: string;
-    portalId: PortalId;
-    mountId: string;
-  }) => void;
+  /** Safe C07 record: codes and opaque identifiers only (core/telemetry). */
+  telemetry?: (event: Readonly<Record<string, string | number>>) => void;
 }>;
 
 export type RequestStatus = Readonly<{
@@ -124,8 +121,14 @@ export function createShell(deps: ShellDeps) {
     container: HTMLElement,
   ) {
     const outcome = await lifecycle.show(id, route, container);
-    if (outcome.status === 'failed' || outcome.status === 'quarantined')
+    if (outcome.status === 'failed' || outcome.status === 'quarantined') {
+      deps.telemetry?.({
+        code: outcome.status === 'failed' ? outcome.code : 'PORTAL_QUARANTINED',
+        portalId: id,
+        stage: 'load',
+      });
       notice(container, outcome, id);
+    }
     return outcome;
   }
 

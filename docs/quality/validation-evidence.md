@@ -780,3 +780,14 @@ width; the mockup chip itself overflows the 1280 px page edge.
     `SESSION_UNAVAILABLE` locally; nginx has no `/api/v1` upstream yet (no Gateway).
 - **TDD:** `tests/core/http/catalog.test.mjs` failed first with `ERR_MODULE_NOT_FOUND` (RED);
   5/5 pass (GREEN). Covers FC-13 (catalogue part) and FC-16 (no frontend authority).
+
+## QA-FRONT-PROMOTION-005
+
+- PR #67 (`promotion/qa-front-24`): `ec0ebc4`… responsive Home and integration guide.
+- PR #70 (`promotion/qa-front-25`) failed the size gate (408/400) with both HTTP commits and
+  was closed without merge; the same commits were promoted separately:
+  PR #71 (`promotion/qa-front-26`, `76f0433`) and PR #72 (`promotion/qa-front-27`, `901f101`),
+  both green and merged; feeder branches deleted.
+- After the merge `git diff origin/qa origin/develop` is empty.
+- **Teacher bot review (norm 9.7–9.9):** PRs #6–#72 were checked through the GitHub API; none
+  has bot review comments, reviews or inline findings, so there are no findings to answer yet.

@@ -1,0 +1,47 @@
+# dlc-front compositor. The shell is immutable per image; the registry, portal entries and the
+# development Auth double are deployment data, never cached (C01, Annex H rule 4).
+server {
+  listen 80;
+  server_name _;
+  root /usr/share/nginx/html;
+
+  # Docker DNS, resolved per request: a stopped portal never prevents nginx from starting.
+  resolver 127.0.0.11 valid=10s ipv6=off;
+
+  # Same-origin proxy to the Clinical container (C01).
+  location ^~ /portals/clinical/ {
+    set $clinical ${CLINICAL_UPSTREAM};
+    proxy_pass $clinical$request_uri;
+    proxy_hide_header Cache-Control;
+    add_header Cache-Control "no-store" always;
+  }
+
+  # Deployment data mounted at /usr/share/nginx/deployment (demo: fixtures/).
+  location = /portal-registry.json {
+    root /usr/share/nginx/deployment;
+    add_header Cache-Control "no-store" always;
+    try_files $uri =404;
+  }
+  location = /dev-auth.js {
+    root /usr/share/nginx/deployment;
+    add_header Cache-Control "no-store" always;
+    try_files $uri =404;
+  }
+  location ^~ /portals/ {
+    root /usr/share/nginx/deployment;
+    add_header Cache-Control "no-store" always;
+    try_files $uri =404;
+  }
+
+  # Missing module or asset files return real errors, never the shell HTML (C01).
+  location ~* \.(js|css|json|png|svg|woff2|map)$ {
+    add_header Cache-Control "no-store" always;
+    try_files $uri =404;
+  }
+
+  # Deep links return the shell HTML.
+  location / {
+    add_header Cache-Control "no-store" always;
+    try_files $uri /index.html;
+  }
+}

@@ -26,7 +26,14 @@ test('public frame: header with brand, deferred links and Login (mockup p. 1-3)'
   ];
   assert.deepEqual(
     deferred.map((el) => el.textContent),
-    ['Citas', 'Servicios', 'Contacto'],
+    ['Servicios', 'Contacto'],
+  );
+  const citas = header.querySelector('.dlc-public-nav a');
+  assert.equal(citas.textContent, 'Citas');
+  assert.equal(citas.getAttribute('href'), '/app/appointments/calendar');
+  assert.equal(
+    header.querySelector('a.dlc-public-brand').getAttribute('href'),
+    '/',
   );
   const login = header.querySelector('a.dlc-public-login');
   assert.equal(login.textContent, 'Login');

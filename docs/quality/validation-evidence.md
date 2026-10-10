@@ -429,3 +429,17 @@ width; the mockup chip itself overflows the 1280 px page edge.
   and six working shortcuts (FC-15); the container was started again afterwards.
 - **Limitations:** the demo compose mounts preview fixtures (development only); production
   registry and Auth configuration are deployment values not yet defined.
+
+## DEV-FRONT-DEVSESSION-001
+
+- **Story:** HU-IAM-001, Issue #1, `code-corhuila/dlc-docs#47`.
+- **Change:** the development Auth double (`fixtures/dev-auth.js`, preview/demo only) restores
+  the session from an optional deployment file `/dev-session.json` (`{"persona": "DENTIST"}`,
+  `ADMINISTRATOR` or `SECRETARY_ASSISTANT`), so the preview starts authenticated without code
+  changes. Missing file, unknown persona or fetch failure → anonymous (Login). Logout keeps the
+  page signed out until the next load. Nothing is stored in the browser (C05). nginx serves the
+  file `no-store` from the deployment data; `fixtures/dev-session.json` defaults to DENTIST.
+- **TDD:** fixture configuration only (outside `src/`); verified in the browser instead of RED.
+- **Browser check (`npm run preview`):** `/app/clinical/patient-a` opens directly as
+  Dra. Valentina Ruiz with the Clinical record; Logout → `/login`.
+- **Replacement:** removed together with the Auth double when IAM/Auth exist.

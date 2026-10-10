@@ -706,3 +706,12 @@ width; the mockup chip itself overflows the 1280 px page edge.
   teammate branch `qa-front-shell-scaffold` remains outside the nomenclature.
 - **Deployment check on the promoted content:** see DEV-FRONT-DEPLOY-002 (from-scratch build,
   healthy container, Clinical down/up).
+
+## DEV-FRONT-DOCS-001
+
+- **Story:** HU-IAM-001, Issue #1, `code-corhuila/dlc-docs#47`.
+- **Change:** README rewritten for norm 5.1 (purpose, how to run with npm and Docker, dependencies,
+  integration steps for portals, source layout, quality commands); spec updated with the status
+  of each requirement, the project-owner decisions that differ from dlc-docs, and the next
+  increments.
+- **TDD:** documentation only; commands in the README were run in DEV-FRONT-DEPLOY-002.

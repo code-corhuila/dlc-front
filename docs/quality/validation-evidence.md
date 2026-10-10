@@ -852,3 +852,19 @@ width; the mockup chip itself overflows the 1280 px page edge.
 | #5.4 Node engine `>=24.12 <25` | Not applied: norm 5.5.1 admits Node 22/24 and portals do not install this package; they consume it at runtime through contract v1 |
 
 - **TDD:** the Unicode cases failed first (RED) and pass after the change (GREEN, 134 tests).
+
+## DEV-FRONT-LIVE-001
+
+- **Story:** HU-IAM-001, Issue #1, `code-corhuila/dlc-docs#47`.
+- **Change (owner decision, extends C07):** while any portal is mounted, the shell checks its
+  entry every 5 s (`HEAD`, `no-store`, never imported). After two consecutive misses it ends that
+  mount (`lifecycle.fail`), shows the usual "Esta sección no está disponible" card in place (no
+  page reload, so the rest of the app keeps its state), records `PORTAL_LOST`, and starts the
+  recovery probe that later offers "La sección ya está disponible — Actualizar". Applies to every
+  portal and to the Dashboard Analytics host. One watcher per mount.
+- **Why:** an already imported module keeps running from browser memory after its container
+  stops; without this the stale portal stayed on screen.
+- **TDD:** shell and loader cases failed first (RED) and pass (GREEN, 136 tests).
+- **Browser check (container `:8080`):** Clinical record open; `docker stop clinical-portal-demo`
+  → the record is replaced by the card in about 14 s without reload; `docker start` → "ya está
+  disponible".

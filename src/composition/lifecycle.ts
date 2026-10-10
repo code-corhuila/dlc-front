@@ -246,5 +246,6 @@ export function createLifecycle(deps: LifecycleDeps) {
     fail,
     clear,
     state: () => ({ phase, portalId: active?.portalId ?? null }),
+    activeMountId: () => active?.mountId ?? null,
   };
 }

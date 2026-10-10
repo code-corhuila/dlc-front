@@ -43,6 +43,10 @@ export type ShellDeps = Readonly<{
   reload: () => void;
   /** C07 recovery watch: probes a down portal and announces when it answers again. */
   probe?: (portalId: PortalId) => Promise<boolean>;
+  /** Liveness of an active portal's entry (owner decision: drop a portal that went down). */
+  reachable?: (portalId: PortalId) => Promise<boolean>;
+  /** Called when an active portal is dropped, so its recovery can be probed. */
+  onLost?: (portalId: PortalId) => void;
   schedule?: (tick: () => Promise<void>, ms: number) => () => void;
   /** Safe C07 record: code and identifiers only, never content or credentials. */
   /** Safe C07 record: codes and opaque identifiers only (core/telemetry). */
@@ -84,6 +88,44 @@ export function createShell(deps: ShellDeps) {
     (heading ?? frame.main).focus();
   }
 
+  const schedule =
+    deps.schedule ??
+    ((tick: () => Promise<void>, ms: number) => {
+      const id = setInterval(() => void tick(), ms);
+      return () => clearInterval(id);
+    });
+
+  /** Ends a live mount whose entry stopped answering and shows the local notice (C07). */
+  async function lose(portalId: PortalId, mountId: string) {
+    const container = await lifecycle.fail(mountId);
+    if (!container) return;
+    deps.telemetry?.({ code: 'PORTAL_LOST', portalId, mountId });
+    deps.onLost?.(portalId);
+    if (container === frame.host) slot = null;
+    notice(
+      container,
+      { status: 'failed', code: 'PORTAL_UNAVAILABLE' },
+      portalId,
+    );
+  }
+
+  let watched: string | null = null;
+  function watchLive(portalId: PortalId) {
+    const reachable = deps.reachable;
+    const mountId = lifecycle.activeMountId();
+    if (!reachable || !mountId || mountId === watched) return;
+    watched = mountId; // One watcher per mount, even across same-owner route updates.
+    let misses = 0;
+    const stop = schedule(async () => {
+      if (lifecycle.activeMountId() !== mountId) return stop();
+      // Two consecutive misses avoid dropping a portal on a single slow answer.
+      misses = (await reachable(portalId)) ? 0 : misses + 1;
+      if (misses < 2 || lifecycle.activeMountId() !== mountId) return;
+      stop();
+      await lose(portalId, mountId);
+    }, 5000);
+  }
+
   function notice(
     container: HTMLElement,
     outcome: Outcome,
@@ -100,12 +142,6 @@ export function createShell(deps: ShellDeps) {
     container.replaceChildren(card);
     if (!portalId || !deps.probe || quarantined) return;
     const probe = deps.probe;
-    const schedule =
-      deps.schedule ??
-      ((tick, ms) => {
-        const id = setInterval(() => void tick(), ms);
-        return () => clearInterval(id);
-      });
     const stop = schedule(async () => {
       if (!card.isConnected) return stop();
       if (await probe(portalId)) {
@@ -121,6 +157,7 @@ export function createShell(deps: ShellDeps) {
     container: HTMLElement,
   ) {
     const outcome = await lifecycle.show(id, route, container);
+    if (outcome.status === 'active') watchLive(id);
     if (outcome.status === 'failed' || outcome.status === 'quarantined') {
       deps.telemetry?.({
         code: outcome.status === 'failed' ? outcome.code : 'PORTAL_QUARANTINED',

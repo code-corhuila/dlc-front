@@ -13,11 +13,13 @@ export const LINE_LIMIT = 400;
 export const PERMANENT_BRANCHES = ['develop', 'qa', 'main'];
 export const CHILD_PREFIXES = {
   develop: ['feat/', 'fix/', 'chore/'],
-  qa: ['qa/'],
+  // `qa/*` cannot coexist with refs/heads/qa in Git; `promotion/*` is the
+  // controlled feeder exception agreed for qa (recorded in the evidence).
+  qa: ['qa/', 'promotion/'],
   main: ['release/', 'hotfix/'],
 };
 export const COMMIT_SUBJECT =
-  /^(feat|fix|docs|style|refactor|test|chore|perf)\([a-z0-9.-]+\): [a-z]/;
+  /^(feat|fix|docs|style|refactor|test|chore|perf)(\([a-z0-9.-]+\))?: [a-z]/;
 export const SECTIONS = [
   'User story',
   'What changed and why',

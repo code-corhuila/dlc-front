@@ -26,6 +26,7 @@ export function validateRequestTarget(input: unknown): TargetValidation {
       !decoded ||
       decoded === '.' ||
       decoded === '..' ||
+      // eslint-disable-next-line no-control-regex -- C06 rejects control characters on purpose
       /[\s\u0000-\u001f\u007f/\\?#%]/u.test(decoded)
     )
       return invalid;
@@ -40,6 +41,7 @@ export function validateRequestTarget(input: unknown): TargetValidation {
       !allowedHeaders.has(key) ||
       Object.hasOwn(headers, key) ||
       typeof value !== 'string' ||
+      // eslint-disable-next-line no-control-regex -- C06 rejects control characters on purpose
       /[\u0000-\u001f\u007f]/u.test(value)
     ) {
       return invalid;

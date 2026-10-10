@@ -85,3 +85,23 @@ test('ADR-011: the compositor imports no framework or federation runtime', () =>
     ['core/a.ts', 'core/b.ts', 'core/c.ts'],
   );
 });
+
+test('controlled exception: promotion/* feeds qa because qa/* collides with refs/heads/qa', () => {
+  assert.deepEqual(validateBranch('promotion/qa-shell-01', 'qa'), []);
+  assert.deepEqual(
+    validateBranch('promotion/x', 'develop').map((f) => f.code),
+    ['BRANCH_WRONG_TARGET'],
+  );
+  assert.deepEqual(
+    validateBranch('promotion/x', 'main').map((f) => f.code),
+    ['BRANCH_WRONG_TARGET'],
+  );
+});
+
+test('norm 15.2: the scope is optional, exactly as the audit expression', () => {
+  assert.deepEqual(
+    validateCommits(['docs: correct scaffold documentation references']),
+    [],
+  );
+  assert.equal(validateCommits(['docs(): empty scope']).length, 1);
+});

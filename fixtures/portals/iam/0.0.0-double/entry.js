@@ -16,6 +16,9 @@ export const { portalId, contractVersion } = double;
 
 /** Development sign-in through the C05 iamSession capability (preview only). */
 export async function mount(host, context) {
+  // Staff administration is not published by IAM yet: the shell shows its notice (C07).
+  if (context.route.basePath === '/app/administration')
+    throw new Error('IAM_ADMINISTRATION_NOT_PUBLISHED');
   const handle = await double.mount(host, context);
   if (!context.iamSession || context.route.basePath !== '/login') return handle;
   const doc = host.ownerDocument;

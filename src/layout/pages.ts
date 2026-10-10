@@ -188,3 +188,40 @@ export function renderHome(document: Document): HTMLElement {
   home.append(text);
   return home;
 }
+
+/** C07: the probed entry answers again; the user still decides when to reload it. */
+export function markAvailable(notice: HTMLElement, onReload: () => void): void {
+  notice.dataset.code = 'PORTAL_AVAILABLE';
+  notice.setAttribute('role', 'status');
+  notice.classList.remove('dlc-state-error');
+  const title = notice.querySelector('h2');
+  const text = notice.querySelector('p');
+  const button = notice.querySelector('button');
+  if (title) title.textContent = 'La sección ya está disponible';
+  if (text) text.textContent = 'El servicio respondió de nuevo.';
+  // A failed module import stays cached by the browser: recover with a page reload (C07).
+  const reload = notice.ownerDocument.createElement('button');
+  reload.type = 'button';
+  reload.className = 'dlc-button';
+  reload.textContent = 'Actualizar';
+  reload.addEventListener('click', onReload);
+  button?.replaceWith(reload);
+}
+
+/** Shown when the published registry revision changes (new portal releases). */
+export function renderUpdateBanner(
+  document: Document,
+  onReload: () => void,
+): HTMLElement {
+  const el = make(document);
+  const banner = el('div', 'dlc-update-banner');
+  banner.setAttribute('role', 'status');
+  const reload = el('button', 'dlc-button', 'Actualizar');
+  reload.type = 'button';
+  reload.addEventListener('click', onReload);
+  banner.append(
+    el('span', '', 'Hay una nueva versión de DI LUCCA disponible.'),
+    reload,
+  );
+  return banner;
+}

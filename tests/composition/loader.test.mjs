@@ -91,3 +91,21 @@ test('C07: explicit retry revalidates the no-store registry', async () => {
   assert.equal((await loader.registry()).ok, true);
   assert.equal(requests.length, 2);
 });
+
+test('C07: probe checks the entry without importing it; revision re-reads the registry', async () => {
+  const { loader, requests, imports } = setup([
+    json(registry),
+    { ok: true, status: 200, json: async () => ({}) },
+    json({ ...registry, registryRevision: 'r2' }),
+  ]);
+  // Only a failed import is worth probing: a mount failure is not fixed by the entry answering.
+  assert.equal(await loader.probe('clinical'), false);
+  loader.markImportFailed('clinical');
+  assert.equal(await loader.probe('clinical'), true);
+  assert.equal(requests[1].url, '/portals/clinical/2.0.0/entry.js');
+  assert.equal(requests[1].init.method, 'HEAD');
+  assert.equal(requests[1].init.cache, 'no-store');
+  assert.equal(await loader.probe('billing'), false);
+  assert.equal(await loader.revision(), 'r2');
+  assert.deepEqual(imports, []);
+});

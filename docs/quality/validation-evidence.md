@@ -300,3 +300,49 @@ width; the mockup chip itself overflows the 1280 px page edge.
   (mockup ≈ 40), word mark x 124 (124), Citas 239 (238), Servicios 328 (330), Contacto 446 (447),
   Login button x 1179, 68×35, `#1EA296` (1179, 69×35, `#1EA296`), header 63 px with `#E5E7EB`
   border (same); footer 93 px, legal links at 1024/1112/1192 (≈ 1015/1109/1194).
+
+## QA-FRONT-PROMOTION-001
+
+- **Environment:** QA promotion of all dlc-front work validated in `develop` up to `f1bf020`.
+- **Mechanics (norm 10):** twelve feeder branches `promotion/qa-front-01` … `-12`, each cut from
+  the current `qa`, filled with `git cherry-pick -x` in `develop` order and merged by PR into
+  `qa`; no permanent branch was merged into another. `promotion/*` is the controlled feeder
+  exception (DEV-FRONT-GATES-002); this record does not claim literal `qa/*` compliance.
+- **Size (norm 9.2):** every promotion PR stayed within 400 computable lines (largest 349).
+- **Decisions:**
+  - Harold's commits `16da03a`/`438a134` were promoted as they are, including the CODEOWNERS
+    comment change (`library-docs` → `code-corhuila/dlc-docs`); the project owner confirmed it
+    was an intentional alignment after a template from another group. The owner rule
+    `*   @ariel5253` is unchanged.
+  - `9a7aeef` and `08a9e50` are exact duplicates of `16da03a` and `438a134` (same parent, merged
+    through PRs #4 and #5) and were not re-applied; their content is in `qa` through the first pair.
+  - `e2d624e` (promotion gate fix) was promoted with `27adad8` in batch 04 so the full CI ran
+    with the agreed feeder rule.
+  - Conflicts only arose in this append-only evidence file and were resolved by keeping both
+    sides (`git merge-file --union`).
+- **Promotion PRs:**
+
+| PR | Feeder branch | Merge commit in `qa` | Source commits |
+| --- | --- | --- | --- |
+| #22 | `promotion/qa-front-01` | `c633150` | `16da03a`, `438a134`, `0c041bf` |
+| #23 | `promotion/qa-front-02` | `add0f4e` | `440e099`, `7ad5313` |
+| #24 | `promotion/qa-front-03` | `124f733` | `6748d8f`, `9b96a03` |
+| #25 | `promotion/qa-front-04` | `5e0bcc7` | `27adad8`, `e2d624e` |
+| #26 | `promotion/qa-front-05` | `fb33055` | `ba39a46`, `574fd33` |
+| #27 | `promotion/qa-front-06` | `abcb7cc` | `249f901` |
+| #28 | `promotion/qa-front-07` | `ff2ef0b` | `9af75eb`, `41f88dc` |
+| #29 | `promotion/qa-front-08` | `1125ec7` | `7332dc2` |
+| #30 | `promotion/qa-front-09` | `e8e9b47` | `2b8698a`, `56ae0bf` |
+| #31 | `promotion/qa-front-10` | `4208eea` | `3e5f34a` |
+| #32 | `promotion/qa-front-11` | `53207ef` | `987d474` |
+| #33 | `promotion/qa-front-12` | `aa2fb54` | `720d27b`, `f1bf020` |
+
+- **CI:** PR #22 had no checks because `ci.yml` only arrives in batch 02; it was verified locally
+  (typecheck, 13/13 tests). PRs #23–#33 passed `ci.yml`; from #25 on with every gate.
+- **Audit (norm 15) after the last merge:** `git diff origin/qa origin/develop` is empty;
+  15.3 returns no commit without trail; 15.4 returns no permanent-branch merge; 15.6: all 21
+  cited SHAs exist in `develop`; 15.2 returns only GitHub "Merge pull request" subjects.
+- **Functional check on `qa` (`aa2fb54`):** `npm ci`, `npm run build`, 89/89 tests; preview at
+  1280×917: `/` → dashboard with the Clinical Analytics double, eight-item menu, Procedimientos
+  active on `/app/billing/procedures`, local PORTAL_UNAVAILABLE on Citas, public frame with the
+  IAM double on `/login`.

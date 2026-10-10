@@ -187,3 +187,11 @@ test('icon-only sidebar keeps an accessible name and tooltip per link', () => {
     assert.equal(link.getAttribute('title'), link.textContent.trim());
   }
 });
+
+test('sidebar logo links to the Home entry', () => {
+  const { document } = setup();
+  const link = document.querySelector('.dlc-sidebar a.dlc-logo-link');
+  assert.equal(link.getAttribute('href'), '/');
+  assert.equal(link.getAttribute('aria-label'), 'DI LUCCA, inicio');
+  assert.ok(link.querySelector('img.dlc-logo'));
+});

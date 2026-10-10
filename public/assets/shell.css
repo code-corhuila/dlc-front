@@ -452,18 +452,19 @@ body {
   margin: 64px auto;
 }
 
-/* Public Home (mockup p. 1): the hero artwork fills the area between header and footer. */
+/* Public Home (mockup p. 1): full-width hero at the artwork's own ratio, footer right below. */
 .dlc-home {
-  min-height: 100%;
-  background: #f4f8fb url('/assets/home-hero.jpg') left center / cover no-repeat;
+  width: 100%;
+  aspect-ratio: 1802 / 872;
+  background: #f4f8fb url('/assets/home-hero.jpg') center / cover no-repeat;
+}
+
+.dlc-public:has(.dlc-home) .dlc-public-main {
+  flex: none;
 }
 
 .dlc-public-host:has(> .dlc-home) {
-  display: flex;
-}
-
-.dlc-public-host > .dlc-home {
-  flex: 1;
+  display: block;
 }
 
 a.dlc-public-brand {

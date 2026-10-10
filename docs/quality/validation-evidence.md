@@ -543,3 +543,19 @@ width; the mockup chip itself overflows the 1280 px page edge.
   record; patient-b in the same Clinical instance (`updateRoute`); Dashboard with Clinical
   Analytics in professional scope (no Ingresos del mes); leaving to Facturación leaves no
   Clinical root or stylesheet.
+
+## DEV-FRONT-HOME-002
+
+- **Story:** HU-IAM-001, Issue #1, `code-corhuila/dlc-docs#47`.
+- **Change (owner decision):** `/` is always the public Home, the entry where the visitor
+  chooses the flow; a signed-in visitor who opens `/login` goes to the Dashboard instead of IAM
+  Login (C04 "otherwise open dashboard"). The Home hero now uses the artwork's own ratio
+  (1802:872) at full width, so nothing is cropped, and the footer follows it directly.
+- **Difference with dlc-docs:** extends DEV-FRONT-HOME-001 (C04 redirects `/`; navigation-map
+  lists Home as deferred).
+- **TDD:** the route case failed first (RED); two shell tests that encoded the previous `/`
+  and `/login` behaviour were adapted (`/app` and `/recover-password`) and a new case covers the
+  signed-in Home; 108 tests pass (GREEN).
+- **Browser comparison (`npm run preview`, 1280×777 = mockup page size, signed in as DENTIST):**
+  header 0–63, hero 63–682, footer 682–775 (mockup 0–63, 63–684, 684–777); tooth, plant and
+  mirror visible as in mockup p. 1.

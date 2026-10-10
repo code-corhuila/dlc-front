@@ -559,3 +559,21 @@ width; the mockup chip itself overflows the 1280 px page edge.
 - **Browser comparison (`npm run preview`, 1280×777 = mockup page size, signed in as DENTIST):**
   header 0–63, hero 63–682, footer 682–775 (mockup 0–63, 63–684, 684–777); tooth, plant and
   mirror visible as in mockup p. 1.
+
+## DEV-FRONT-TOPBAR-001
+
+- **Story:** HU-IAM-001, Issue #1, `code-corhuila/dlc-docs#47`.
+- **Change:** the top bar is interactive.
+  - **Search:** `form[role=search]`; Enter with a non-empty term requests
+    `/app/patients?q=<term>` through the shell navigation. The Patients owner interprets the
+    query (C04 route query); the shell aggregates no business data. The Patients C02 test double
+    filters the synthetic list by `q` to demonstrate it.
+  - **User menu:** the chip is a `button` (`aria-haspopup="menu"`, `aria-expanded`) opening a
+    menu with name, role, Inicio (`/`) and Cerrar sesión (C05 logout); closes on Escape (focus
+    back to the chip) and on outside click.
+- **Difference:** C04 defers global search; by owner request the search is enabled as owner-route
+  navigation only, with no shell-side data or new API.
+- **TDD:** the search and menu cases failed first (2 failures, RED) and pass (GREEN).
+- **Browser check (`npm run preview`, 1280×917):** "sintético b" + Enter → `/app/patients?q=…`
+  listing only Paciente sintético B; chip → menu with Dra. Valentina Ruiz / ODONTÓLOGO, no
+  horizontal overflow; outside click closes it; Cerrar sesión → `/login`.

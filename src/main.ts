@@ -69,6 +69,11 @@ async function boot() {
     navigation,
     path: location.pathname,
     onLogout: () => void session.logout(),
+    // The owner (Patients) interprets the query; the shell only routes it (C04).
+    onSearch: (term) =>
+      void shell.request({
+        path: `/app/patients?q=${encodeURIComponent(term)}`,
+      }),
   });
   if (!registry.ok) {
     // C07: frame plus registry-unavailable state; no arbitrary entries are loaded.

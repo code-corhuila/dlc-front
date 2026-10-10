@@ -621,3 +621,49 @@ button.dlc-user-chip {
   box-shadow: 0 8px 24px rgba(15, 23, 42, 0.14);
   font: 14px var(--dlc-font);
 }
+
+/* Public frame and Home on phones: no horizontal overflow, hero text kept readable. */
+@media (max-width: 720px) {
+  .dlc-public-header {
+    flex-wrap: wrap;
+    height: auto;
+    padding: 8px 16px;
+    row-gap: 4px;
+  }
+
+  .dlc-public-brand {
+    gap: 10px;
+  }
+
+  .dlc-public-mark {
+    width: 40px;
+    height: 40px;
+  }
+
+  .dlc-public-nav {
+    order: 3;
+    width: 100%;
+    gap: 24px;
+    margin-left: 0;
+    padding: 4px 0;
+  }
+
+  .dlc-public-footer {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+    height: auto;
+    padding: 20px 16px;
+  }
+
+  .dlc-public-copy {
+    flex-wrap: wrap;
+  }
+
+  /* Show the text half of the artwork (≈ 900 of its 1802 px) at full width. */
+  .dlc-home {
+    aspect-ratio: 900 / 872;
+    background-size: auto 100%;
+    background-position: left center;
+  }
+}

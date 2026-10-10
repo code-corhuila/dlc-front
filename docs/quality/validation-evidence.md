@@ -715,3 +715,14 @@ width; the mockup chip itself overflows the 1280 px page edge.
   of each requirement, the project-owner decisions that differ from dlc-docs, and the next
   increments.
 - **TDD:** documentation only; commands in the README were run in DEV-FRONT-DEPLOY-002.
+
+## DEV-FRONT-HOME-004
+
+- **Story:** HU-IAM-001, Issue #1, `code-corhuila/dlc-docs#47`.
+- **Change:** public frame and Home responsive at ≤ 720 px: header wraps (brand + Login on the
+  first row, Citas/Servicios/Contacto below), footer stacks, and the hero shows the text half of
+  the mockup artwork at full width so the welcome text stays readable.
+- **TDD:** styling only; verified in the browser.
+- **Browser check (container `:8080`, 440×956 as the reported iPhone 16 Pro Max):** no horizontal
+  scroll (scroll width 440 = client width), Login visible at x 356, hero 440×426, footer stacked;
+  desktop 1280 px layout unchanged (rules only apply ≤ 720 px).

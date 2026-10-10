@@ -10,7 +10,7 @@ import {
 } from './core/session/session.ts';
 import { renderFrame } from './layout/frame.ts';
 import { orderNavigation } from './layout/navigation.ts';
-import { renderUnavailable } from './layout/pages.ts';
+import { renderServiceError } from './layout/pages.ts';
 import { renderPublicFrame } from './layout/publicFrame.ts';
 
 const NO_USER = { id: '', name: '', roles: [], permissions: [] };
@@ -33,7 +33,21 @@ async function loadAuthPort(): Promise<AuthPort> {
   }
 }
 
+/** C01 required browser facilities; no insecure fallback when missing (FC-18). */
+const supported = () =>
+  typeof AbortController === 'function' &&
+  typeof BroadcastChannel === 'function' &&
+  typeof history.pushState === 'function' &&
+  'locks' in navigator &&
+  typeof crypto?.randomUUID === 'function';
+
 async function boot() {
+  if (!supported()) {
+    const page = renderPublicFrame(document);
+    page.host.append(renderServiceError(document, 'UNSUPPORTED_BROWSER'));
+    document.body.append(page.root);
+    return;
+  }
   const loader = createEntryLoader({
     fetch: (url, init) => fetch(url, init),
     importModule: (url) => import(url),
@@ -60,7 +74,9 @@ async function boot() {
     // C07: frame plus registry-unavailable state; no arbitrary entries are loaded.
     document.body.append(frame.root);
     frame.host.replaceChildren(
-      renderUnavailable(document, { onRetry: () => location.reload() }),
+      renderServiceError(document, 'REGISTRY_UNAVAILABLE', () =>
+        location.reload(),
+      ),
     );
     return;
   }
@@ -97,6 +113,9 @@ async function boot() {
     lifecycle,
     history: browserHistory(window),
     isAuthenticated: () => session.getSnapshot().state === 'authenticated',
+    sessionState: () => session.getSnapshot().state,
+    // Explicit retry re-runs session resolution from a clean page (C05).
+    retrySession: () => location.reload(),
     user: currentUser,
     navigation: () => navigation,
     onRetry: loader.invalidate,

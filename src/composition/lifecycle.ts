@@ -46,6 +46,7 @@ export type LifecycleDeps = Readonly<{
 
 type Mounted = {
   portalId: PortalId;
+  mountId: string;
   handle: PortalHandle;
   host: HTMLElement;
   controller: AbortController;
@@ -141,10 +142,11 @@ export function createLifecycle(deps: LifecycleDeps) {
 
     phase = 'MOUNTING';
     container.append(host);
+    const mountId = deps.uuid();
     const base: BaseContext = {
       contractVersion: 1,
       portalId: id,
-      mountId: deps.uuid(),
+      mountId,
       compositionId: route.compositionId,
       route,
       signal: controller.signal,
@@ -168,7 +170,7 @@ export function createLifecycle(deps: LifecycleDeps) {
       return fail();
     }
     pending = null;
-    active = { portalId: id, handle, host, controller };
+    active = { portalId: id, mountId, handle, host, controller };
     phase = 'ACTIVE';
     return { status: 'active' } as const;
   }
@@ -220,6 +222,17 @@ export function createLifecycle(deps: LifecycleDeps) {
     return true;
   }
 
+  /** C07: a live mount reported a fatal failure; returns its container, or null. */
+  async function fail(mountId: string): Promise<HTMLElement | null> {
+    const current = active;
+    if (!current || current.mountId !== mountId) return null;
+    const container = current.host.parentElement;
+    generation += 1;
+    await cleanup(current);
+    phase = 'FAILED';
+    return container;
+  }
+
   /** Forced cleanup (session invalidation): no leave veto (C02). */
   async function clear() {
     generation += 1;
@@ -230,6 +243,7 @@ export function createLifecycle(deps: LifecycleDeps) {
   return {
     show,
     leave,
+    fail,
     clear,
     state: () => ({ phase, portalId: active?.portalId ?? null }),
   };

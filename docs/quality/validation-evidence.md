@@ -404,3 +404,42 @@ width; the mockup chip itself overflows the 1280 px page edge.
   inside the record; in the composed shell the role comes from the session.
 - **Limitations:** no C06 `http` capability in the context yet; deploy nginx/compose proxy comes
   in the deployment increment.
+
+## DEV-FRONT-DEPLOY-001
+
+- **Story:** HU-IAM-001, Issue #1, `code-corhuila/dlc-docs#47`.
+- **Change:** `deploy/Dockerfile` (Node 24 build with `npm ci` + `npm run build`, served by
+  nginx 1.27), `deploy/nginx.conf.template` and `deploy/compose.yml` for the front-only demo:
+  - same-origin proxy `^~ /portals/clinical/` → `${CLINICAL_UPSTREAM}` (default
+    `http://clinical-portal-demo`) resolved per request through Docker DNS, so a stopped portal
+    never prevents nginx from starting (C07); upstream `Cache-Control` replaced by `no-store`;
+  - `/portal-registry.json`, `/dev-auth.js` and `/portals/` served `no-store` from the mounted
+    deployment data (`fixtures/` in the demo compose only); missing files return 404, never the
+    shell HTML; deep links return `index.html` (C01, Annex H rule 4);
+  - compose joins the external `dlc-clinical-portal_default` network; variables documented in
+    `.env.example`.
+- **Annex H difference:** Annex H asks for Node 22 in the Dockerfile; the repository engines
+  require Node 24.12+ (norm 5.5.1 admits Node 22 or 24), recorded since DEV-FRONT-RULES-001.
+- **Verification (`docker compose -f deploy/compose.yml up --build -d`, Clinical containers up):**
+  `curl`: `/`, `/app/clinical/patient-a` → 200 HTML `no-store`; registry, dev Auth double,
+  Clinical `entry.js`/`entry.css` through the proxy → 200 `no-store`; missing entry and
+  `/nope.js` → 404. Browser at `http://localhost:8080`: DENTIST record of patient-a rendered.
+  With `clinical-portal-demo` stopped: `dlc-front` still 200, proxy 504; after reload and
+  sign-in the Dashboard shows the local PORTAL_UNAVAILABLE notice with the shell heading visible
+  and six working shortcuts (FC-15); the container was started again afterwards.
+- **Limitations:** the demo compose mounts preview fixtures (development only); production
+  registry and Auth configuration are deployment values not yet defined.
+
+## DEV-FRONT-DEVSESSION-001
+
+- **Story:** HU-IAM-001, Issue #1, `code-corhuila/dlc-docs#47`.
+- **Change:** the development Auth double (`fixtures/dev-auth.js`, preview/demo only) restores
+  the session from an optional deployment file `/dev-session.json` (`{"persona": "DENTIST"}`,
+  `ADMINISTRATOR` or `SECRETARY_ASSISTANT`), so the preview starts authenticated without code
+  changes. Missing file, unknown persona or fetch failure → anonymous (Login). Logout keeps the
+  page signed out until the next load. Nothing is stored in the browser (C05). nginx serves the
+  file `no-store` from the deployment data; `fixtures/dev-session.json` defaults to DENTIST.
+- **TDD:** fixture configuration only (outside `src/`); verified in the browser instead of RED.
+- **Browser check (`npm run preview`):** `/app/clinical/patient-a` opens directly as
+  Dra. Valentina Ruiz with the Clinical record; Logout → `/login`.
+- **Replacement:** removed together with the Auth double when IAM/Auth exist.

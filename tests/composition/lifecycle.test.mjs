@@ -320,3 +320,17 @@ test('C02: voluntary leave asks canLeave before releasing the mount', async () =
   assert.deepEqual(log, ['patient:mount', 'patient:unmount']);
   assert.deepEqual(lifecycle.state(), { phase: 'IDLE', portalId: null });
 });
+
+test('C07: reportFailure ends only the live mount it came from', async () => {
+  const log = [];
+  const clinical = double('clinical', log);
+  const { lifecycle, container } = setup({ clinical });
+  await lifecycle.show('clinical', route('/x'));
+  const [context] = clinical.contexts;
+  assert.equal(await lifecycle.fail('another-mount'), null);
+  assert.equal(await lifecycle.fail(context.mountId), container);
+  assert.deepEqual(log, ['clinical:mount', 'clinical:unmount']);
+  assert.equal(context.signal.aborted, true);
+  assert.deepEqual(lifecycle.state(), { phase: 'FAILED', portalId: null });
+  assert.equal(await lifecycle.fail(context.mountId), null);
+});

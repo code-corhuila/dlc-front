@@ -868,3 +868,16 @@ width; the mockup chip itself overflows the 1280 px page edge.
 - **Browser check (container `:8080`):** Clinical record open; `docker stop clinical-portal-demo`
   → the record is replaced by the card in about 14 s without reload; `docker start` → "ya está
   disponible".
+
+## DEV-FRONT-DEMO-003
+
+- **Story:** HU-IAM-001, Issue #1, `code-corhuila/dlc-docs#47`.
+- **Change:** the Clinical team applied the requested fixes (`dlc-clinical-portal` `develop`
+  `ba7d57b`: patient selector at `/app/clinical`, selection through `navigation.request`, demo bar
+  driven by the compositor route). The demo registry descriptor "Historia clínica" returns to the
+  owner base `/app/clinical` (reverts the workaround of DEV-FRONT-DEMO-002).
+- **Browser check (`:8080`, Clinical containers rebuilt from `ba7d57b`):** Historia clínica →
+  `/app/clinical` with "Seleccione un paciente" and the synthetic list; choosing B →
+  `/app/clinical/patient-b` with the item active; Back → `/app/clinical`.
+- **Branch naming answer from the professor:** `hu-x-dev → develop` / `hu-x-qa → qa` refers to
+  the flow, not to branch names; the norm 6.3 prefixes in use comply.

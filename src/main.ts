@@ -94,9 +94,11 @@ async function boot() {
   });
   const transport = createHttpClient({
     fetch: (url, init) => fetch(url, init),
-    // The Auth adapter will hold the access token privately; the dev double has none,
-    // so protected calls fail locally with SESSION_UNAVAILABLE (C05, C06).
-    accessToken: () => null,
+    // The Auth adapter holds the access token privately; portals never see it (C05).
+    accessToken: () =>
+      session.getSnapshot().state === 'authenticated'
+        ? (auth.accessToken?.() ?? null)
+        : null,
     onUnauthorized: () => session.invalidate('UNAUTHORIZED'),
     uuid: () => crypto.randomUUID(),
   });

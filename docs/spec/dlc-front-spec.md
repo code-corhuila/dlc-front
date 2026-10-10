@@ -61,21 +61,46 @@ it is added to the registry: record at `/app/clinical/{patientId}` (alias
 `/app/patients/{uuid}`), Analytics in Dashboard with localPath `/analytics`. No adapter for
 Clinical is written in dlc-front.
 
-## 6. Increments
+## 6. Status (develop = qa)
 
-1. Rules, spec and minimal CI (this increment).
-2. Quality tooling: lint, format, coverage, build, `pr-gates.mjs`, `.gitattributes`, `.env.example`.
-3. Common frame and sidebar (FR-09, FR-04) with test-double portals.
-4. Routing, alias, 404 and Dashboard frame (FR-03, FR-10).
-5. Registry and entry loading (FR-01).
-6. Lifecycle (FR-02).
-7. Session port, Auth double and session screens (FR-05, FR-06, FR-11).
-8. HTTP capability completion (FR-07).
-9. Failure containment and telemetry (FR-08).
-10. Deployment and compose (FR-12).
-11. Clinical real entry via the registry.
+| ID | Status | Evidence |
+| --- | --- | --- |
+| FR-01 Registry and entry loading | Done | DEV-FRONT-REGISTRY-001, LOADER-001 |
+| FR-02 Lifecycle | Done | DEV-FRONT-LIFECYCLE-001, SLOTS-001 |
+| FR-03 Routing, alias, 404, safe return | Done | DEV-FRONT-ROUTES-001, SHELL-001 |
+| FR-04 Sidebar visibility | Done | DEV-FRONT-NAV-001, SIDEBAR-002 |
+| FR-05 Session projection | Done (port) | DEV-FRONT-SESSION-001 |
+| FR-06 Development Auth double | Done (fixtures only) | DEV-FRONT-CLINICAL-001, DEVSESSION-001 |
+| FR-07 HTTP capability | Pending (target validation only) | — |
+| FR-08 Containment and recovery | Done; safe telemetry pending | DEV-FRONT-CLINICAL-001, RECOVERY-001 |
+| FR-09 Common frame | Done | DEV-FRONT-FRAME-002, FIT-001, TOPBAR-001 |
+| FR-10 Dashboard | Done | DEV-FRONT-CLINICAL-001, DASHBOARD-CHECK-001 |
+| FR-11 Session and browser screens | Done | DEV-FRONT-ERRORS-001 |
+| FR-12 Deployment | Done | DEV-FRONT-DEPLOY-001, DEPLOY-002 |
+| Clinical real entry | Integrated (demo build `0.1.0-demo`) | DEV-FRONT-CLINICAL-001 |
 
-## 7. Definition of Done for this stage
+## 7. Project-owner decisions (differences with dlc-docs)
+
+| Decision | dlc-docs today | Evidence |
+| --- | --- | --- |
+| `/` is always the public Home (mockup p. 1); signed-in `/login` opens the Dashboard | C04 redirects `/`; navigation-map lists Home as deferred | DEV-FRONT-HOME-001/002 |
+| Home "Servicios" opens the procedure catalog (mockup p. 7); "Contacto" inactive | Not specified | DEV-FRONT-HOME-003 |
+| Top bar search routes the term to `/app/patients?q=` | C04 defers global search | DEV-FRONT-TOPBAR-001 |
+| Sidebar follows the mockup labels and order with owner sub-areas | C04 baseline descriptors | DEV-FRONT-SIDEBAR-002 |
+| Down portals are probed and offer "Actualizar"; new registry revisions are announced | C07 explicit retry (kept: nothing reloads by itself) | DEV-FRONT-RECOVERY-001 |
+| Demo "Historia clínica" opens `/app/clinical/patient-a` | Owner descriptor `/app/clinical` | DEV-FRONT-DEMO-002 |
+
+These should be reflected in dlc-docs by its owner.
+
+## 8. Next increments
+
+1. C06 HTTP capability (`context.http`): operation catalogue from the OpenAPI contracts,
+   correlation, 10 s timeout, central message table, 401 closure, Idempotency-Key.
+2. C07 safe telemetry record (FC-17).
+3. Real Auth adapter (CSRF, refresh, Web Locks, BroadcastChannel; FC-09, FC-10) when IAM/Auth exist.
+4. Register the other portals as they publish their `entry.js`.
+
+## 9. Definition of Done for this stage
 
 - Annex H checklist satisfied where it does not require the API or contradict ADR-011.
 - `docker compose up` starts the compositor with test-double portals; navigation works per role.

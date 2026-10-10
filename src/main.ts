@@ -10,6 +10,7 @@ import {
 } from './core/session/session.ts';
 import { createHttpCapability } from './core/http/capability.ts';
 import { createHttpClient } from './core/http/client.ts';
+import { createTelemetry } from './core/telemetry/telemetry.ts';
 import { renderFrame } from './layout/frame.ts';
 import { orderNavigation } from './layout/navigation.ts';
 import { renderServiceError, renderUpdateBanner } from './layout/pages.ts';
@@ -88,7 +89,10 @@ async function boot() {
     return;
   }
 
-  const httpClient = createHttpClient({
+  const telemetry = createTelemetry({
+    sink: (event) => console.info('dlc-front', event),
+  });
+  const transport = createHttpClient({
     fetch: (url, init) => fetch(url, init),
     // The Auth adapter will hold the access token privately; the dev double has none,
     // so protected calls fail locally with SESSION_UNAVAILABLE (C05, C06).
@@ -96,6 +100,21 @@ async function boot() {
     onUnauthorized: () => session.invalidate('UNAUTHORIZED'),
     uuid: () => crypto.randomUUID(),
   });
+  // C07: record failed requests by code and ids only; cancellations are expected.
+  const httpClient = {
+    request: async (input: Parameters<typeof transport.request>[0]) => {
+      const result = await transport.request(input);
+      if (!result.ok && result.kind !== 'cancelled')
+        telemetry.record({
+          code: result.error,
+          stage: 'http',
+          status: result.status,
+          correlationId: result.correlationId,
+          traceId: result.traceId,
+        });
+      return result;
+    },
+  };
 
   const lifecycle = createLifecycle({
     container: frame.host,
@@ -138,7 +157,7 @@ async function boot() {
     onRetry: loader.invalidate,
     reload: () => location.reload(),
     probe: loader.probe,
-    telemetry: (event) => console.info('dlc-front', event),
+    telemetry: telemetry.record,
   });
   session.subscribe(() => {
     frame.setUser?.(currentUser());

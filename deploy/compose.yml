@@ -11,7 +11,7 @@ services:
     environment:
       CLINICAL_UPSTREAM: ${CLINICAL_UPSTREAM:-http://clinical-portal-demo}
     ports:
-      - "${FRONT_PORT:-8080}:80"
+      - '${FRONT_PORT:-8080}:80'
     volumes:
       # Demo deployment data (develop only): registry, C02 test doubles, dev Auth double.
       - ../fixtures:/usr/share/nginx/deployment:ro

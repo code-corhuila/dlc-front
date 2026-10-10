@@ -10,6 +10,13 @@ services:
       dockerfile: deploy/Dockerfile
     environment:
       CLINICAL_UPSTREAM: ${CLINICAL_UPSTREAM:-http://clinical-portal-demo}
+    restart: unless-stopped
+    healthcheck:
+      test: ['CMD', 'wget', '-q', '-O', '/dev/null', 'http://127.0.0.1/healthz']
+      interval: 15s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
     ports:
       - '${FRONT_PORT:-8080}:80'
     volumes:
@@ -20,6 +27,7 @@ services:
       - clinical
 
 networks:
+  # Created by dlc-clinical-portal's compose: start Clinical first (docs/demo).
   clinical:
     external: true
     name: ${CLINICAL_NETWORK:-dlc-clinical-portal_default}

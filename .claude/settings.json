@@ -1,0 +1,38 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//c/Users/bonil/Desktop/dev-dilucca/truth-root/**)",
+      "Read(//c/Users/bonil/Desktop/dev-dilucca/clinical-workspace/dlc-clinical-portal/**)",
+      "Read(//c/Users/bonil/Desktop/dlc-docs/**)",
+      "Bash(git status *)",
+      "Bash(git branch *)",
+      "Bash(git diff *)",
+      "Bash(git fetch *)",
+      "Bash(git rev-parse *)",
+      "Bash(git log *)",
+      "Bash(git show *)",
+      "Bash(npm ci)",
+      "Bash(npm run *)",
+      "Bash(npm test)",
+      "Bash(node scripts/pr-gates.mjs *)",
+      "Bash(gh pr view *)",
+      "Bash(gh pr checks *)",
+      "Bash(gh run view *)",
+      "Bash(gh run list *)",
+      "Bash(docker compose *)"
+    ],
+    "deny": [
+      "Bash(git rebase *)",
+      "Bash(git reset --hard *)",
+      "Bash(git clean *)",
+      "Bash(git checkout -- *)",
+      "Bash(git push --force *)",
+      "Bash(git push -f *)",
+      "Bash(rm -rf *)",
+      "Edit(//c/Users/bonil/Desktop/dev-dilucca/truth-root/**)",
+      "Edit(//c/Users/bonil/Desktop/dlc-docs/**)",
+      "Edit(//c/Users/bonil/Desktop/dev-dilucca/clinical-workspace/dlc-clinical-portal/**)",
+      "Edit(.github/CODEOWNERS)"
+    ]
+  }
+}

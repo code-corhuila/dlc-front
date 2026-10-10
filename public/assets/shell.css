@@ -167,6 +167,10 @@ body {
 }
 
 .dlc-topbar {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  background: var(--dlc-page-bg);
   display: flex;
   align-items: center;
   justify-content: flex-end;
@@ -594,4 +598,9 @@ button.dlc-user-chip {
 
 .dlc-menu-item:hover {
   background: var(--dlc-active-bg);
+}
+
+.dlc-logo-link {
+  display: block;
+  width: fit-content;
 }

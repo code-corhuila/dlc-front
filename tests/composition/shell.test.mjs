@@ -415,3 +415,10 @@ test('C07: a down portal notice turns into "available" when its probe succeeds',
   await tick();
   assert.ok(document.querySelector('[data-code="PORTAL_AVAILABLE"]'));
 });
+
+test('C07: a portal that cannot be loaded is recorded with its stage and identifiers only', async () => {
+  const { events } = await setup('/app/billing', {});
+  assert.deepEqual(events, [
+    { code: 'PORTAL_UNAVAILABLE', portalId: 'billing', stage: 'load' },
+  ]);
+});

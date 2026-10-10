@@ -613,3 +613,29 @@ width; the mockup chip itself overflows the 1280 px page edge.
 - **TDD:** the public frame case failed first (RED) and passes (GREEN).
 - **Browser check (`npm run preview`):** a real click on Login with a session opened
   `/app/dashboard`.
+
+## QA-FRONT-PROMOTION-003
+
+- **Environment:** QA promotion of `9a81893` … `67aeef2` (second promotion record, Home entry
+  flow, top bar search and menu, sticky top bar and logo link, Home services link).
+
+| PR | Feeder branch | Merge commit in `qa` | Source commits |
+| --- | --- | --- | --- |
+| #53 | `promotion/qa-front-18` | `2cc2b06` | `9a81893`, `e7aa558` |
+| #54 | `promotion/qa-front-19` | `9e8e298` | `933a31c` |
+| #55 | `promotion/qa-front-20` | `899457d` | `e5b87ac`, `67aeef2` |
+
+- **CI:** the three PRs passed every gate within 400 computable lines.
+- **Full audit after the merge (all promotions 001–003):** `git diff origin/qa origin/develop`
+  empty; every `develop` commit has a `qa` commit with its `cherry picked from` trail except the
+  exact duplicates `9a7aeef`/`08a9e50` (QA-FRONT-PROMOTION-001) and the seed `5b339d1`, which is
+  `qa`'s own base; 15.2 no non-conformant subject; 15.3 no `qa` commit without trail; 15.4 no
+  permanent-branch merge; 15.6 all 37 trails point to SHAs in `develop`.
+- **PR format (Annex I):** the merged PRs #6–#51 lacked the required checklist section; it was
+  added to their descriptions (no secrets, no schema changes outside `-db`, contract respected),
+  and #52–#55 include it.
+- **Branch hygiene (norm 6.4.3, audit 15.1/15.5):** merged child branches were deleted after
+  their PRs, so the `promotion/*` feeders no longer appear in 15.1. Two teammate branches
+  (`feat/hu-iam-001-05`, `chore/front-shell-scaffold`) were deleted by mistake in that cleanup
+  and restored immediately at their exact SHAs (`0c041bf`, `438a134`). `qa-front-shell-scaffold`
+  (teammate, outside the 6.3 nomenclature) was not touched.

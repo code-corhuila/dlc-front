@@ -673,3 +673,22 @@ width; the mockup chip itself overflows the 1280 px page edge.
   usuarios show the card (administration stays "no disponible" after 7 s: no false recovery);
   `docker stop clinical-portal-demo` → Historia clínica card; `docker start` → card turns into
   "La sección ya está disponible"; Actualizar → Clinical record of patient-a.
+
+## DEV-FRONT-DEPLOY-002
+
+- **Story:** HU-IAM-001, Issue #1, `code-corhuila/dlc-docs#47`.
+- **Change:** base images pinned by digest (`node:24-alpine@sha256:ebfe2f90…`,
+  `nginx:1.27-alpine@sha256:65645c7b…`) for reproducible builds; `/healthz` liveness endpoint in
+  nginx (independent of portals) with a compose `healthcheck` and `restart: unless-stopped`; the
+  external Clinical network is documented in the compose file.
+- **Verification from scratch:** `docker compose down` for both projects; starting dlc-front
+  first fails clearly ("network dlc-clinical-portal_default declared as external, but could not
+  be found"), so Clinical must start first (demo guide step 1); then Clinical `up`, dlc-front
+  `build --no-cache` and `up`: container `healthy`. `nginx -t` passes; the image holds only the
+  compiled app (fixtures arrive as a read-only volume). `curl`: `/healthz`, `/`, deep link,
+  registry, dev session, dev Auth double, Clinical `entry.js`/`entry.css` through the proxy, IAM
+  double, Home image → 200 `no-store`; pending Patients entry and `/nope.js` → 404. With
+  `clinical-portal-demo` stopped: front 200, healthz 200, proxy 504; after restart proxy 200.
+  Browser: `/app/clinical/patient-a` renders the record as Dra. Valentina Ruiz.
+- **Limitation:** order dependency on the Clinical network remains (no shared network owner
+  yet; would be defined by `dlc-infra`).

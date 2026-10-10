@@ -8,6 +8,15 @@ server {
   # Docker DNS, resolved per request: a stopped portal never prevents nginx from starting.
   resolver 127.0.0.11 valid=10s ipv6=off;
 
+  # Liveness of the compositor itself; independent of every portal (C07).
+  location = /healthz {
+    access_log off;
+    default_type text/plain;
+    add_header Cache-Control "no-store" always;
+    return 200 "ok
+";
+  }
+
   # Same-origin proxy to the Clinical container (C01).
   location ^~ /portals/clinical/ {
     set $clinical ${CLINICAL_UPSTREAM};

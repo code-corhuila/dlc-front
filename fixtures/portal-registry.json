@@ -106,7 +106,7 @@
         {
           "id": "clinical",
           "label": "Historia clínica",
-          "path": "/app/clinical/patient-a",
+          "path": "/app/clinical",
           "visibility": {
             "rolesAny": ["DENTIST", "ADMINISTRATOR"],
             "permissionsAll": []

@@ -430,3 +430,18 @@ body {
 .dlc-public-legal .dlc-public-link {
   font-size: 13px;
 }
+
+/* Mockup p. 4: Clinical Analytics owns the visible dashboard header when it is active. */
+.dlc-dashboard[data-analytics='active'] > .dlc-page-title,
+.dlc-dashboard[data-analytics='active'] > .dlc-page-subtitle {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.dlc-analytics-host + .dlc-shortcuts {
+  margin-top: 32px;
+}

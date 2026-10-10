@@ -90,8 +90,8 @@ export function renderDashboard(document: Document, options: DashboardOptions) {
   root.append(
     heading(document, 'Panel'),
     el('p', 'dlc-page-subtitle', `Hola de nuevo, ${options.userName}.`),
-    shortcuts,
     analyticsHost,
+    shortcuts,
   );
   return { root, analyticsHost };
 }

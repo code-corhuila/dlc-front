@@ -3,6 +3,7 @@ import test from 'node:test';
 import {
   BASELINE_NAVIGATION,
   activeItemId,
+  orderNavigation,
   visibleItems,
 } from '../../src/layout/navigation.ts';
 
@@ -80,4 +81,44 @@ test('C04: the active item matches whole path segments, not raw prefixes', () =>
     activeItemId(BASELINE_NAVIGATION, '/app/dashboard'),
     'dashboard',
   );
+});
+
+const MOCKUP_MENU = [
+  ...BASELINE_NAVIGATION,
+  {
+    id: 'procedures',
+    label: 'Procedimientos',
+    path: '/app/billing/procedures',
+    visibility: { rolesAny: [], permissionsAll: [] },
+  },
+  {
+    id: 'availability',
+    label: 'Horarios y Slots',
+    path: '/app/appointments/availability',
+    visibility: { rolesAny: [], permissionsAll: [] },
+  },
+];
+
+test('mockup sidebar order: owner sub-areas sit next to their owners', () => {
+  assert.deepEqual(
+    orderNavigation(MOCKUP_MENU).map((item) => item.id),
+    [
+      'dashboard',
+      'patients',
+      'procedures',
+      'appointments',
+      'availability',
+      'clinical',
+      'billing',
+      'administration',
+    ],
+  );
+});
+
+test('C04: the most specific owner entry is active', () => {
+  const active = (path) => activeItemId(MOCKUP_MENU, path);
+  assert.equal(active('/app/billing/procedures/9'), 'procedures');
+  assert.equal(active('/app/billing/invoices/7'), 'billing');
+  assert.equal(active('/app/appointments/availability'), 'availability');
+  assert.equal(active('/app/appointments/new'), 'appointments');
 });

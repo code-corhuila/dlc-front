@@ -256,3 +256,23 @@ width; the mockup chip itself overflows the 1280 px page edge.
 - **TDD:** two new cases in `tests/scripts/pr-gates.test.mjs` failed first (RED, 2 failures);
   after the change 8/8 pass (GREEN).
 - **Validation:** typecheck, lint, format:check, test, test:coverage, build: results in the PR.
+
+## DEV-FRONT-SIDEBAR-002
+
+- **Story:** HU-IAM-001, Issue #1, `code-corhuila/dlc-docs#47`.
+- **Change:** the sidebar renders the full mockup menu from owner-supplied registry descriptors:
+  Dashboard, Pacientes, Procedimientos, Citas, Horarios y Slots, Historia clínica, Facturación,
+  Gestión de usuarios. `orderNavigation` follows the mockup order (owner sub-areas next to their
+  owners); `activeItemId` picks the most specific entry whose path prefixes the URL, else the
+  owner's default entry; new `procedures` (bolt) and `availability` (clock) icons, and filled
+  person/tooth/gear glyphs as drawn in the mockup.
+- **Ownership (navigation-map.md):** Horarios y Slots → `dlc-appointments-portal`;
+  Procedimientos (price catalog) → `dlc-billing-portal`; per C04 these entries are owner
+  metadata. The preview registry (`fixtures/`) supplies them with placeholder paths
+  `/app/appointments/availability` and `/app/billing/procedures`, pending owner approval.
+- **Labels:** the preview registry uses the mockup labels ("Historia clínica", "Gestión de
+  usuarios"); the shell baseline keeps the navigation-map labels as fallback.
+- **TDD:** two new cases in `tests/layout/navigation.test.mjs` failed first (RED, 2 failures);
+  after the change all tests pass (84, GREEN).
+- **Browser check:** `npm run build` + `npm run preview`, 1280×917, `/app/billing/procedures`:
+  eight items in the mockup order with Procedimientos active.

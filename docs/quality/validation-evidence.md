@@ -516,3 +516,46 @@ width; the mockup chip itself overflows the 1280 px page edge.
   Pacientes → patient-a record (Historia clínica active); Pacientes → patient-c → Clinical shows
   "Acceso denegado"; Back → `/app/patients`. Steps 9–14 of the script were verified in
   DEV-FRONT-CLINICAL-001, DEV-FRONT-DEPLOY-001 and DEV-FRONT-WIRING-001.
+
+## QA-FRONT-PROMOTION-002
+
+- **Environment:** QA promotion of the `develop` work after QA-FRONT-PROMOTION-001, up to
+  `fc03016` (session, Clinical integration, deployment, dev session file, service error pages,
+  public Home, viewport fit and the Clinical/Dashboard demo).
+- **Mechanics:** five feeder branches `promotion/qa-front-13` … `-17`, each cut from the current
+  `qa` and filled with `git cherry-pick -x` in `develop` order (append-only evidence conflicts
+  resolved by keeping both sides), merged by PR into `qa`; no permanent-branch merge.
+
+| PR | Feeder branch | Merge commit in `qa` | Source commits |
+| --- | --- | --- | --- |
+| #43 | `promotion/qa-front-13` | `822cb32` | `364db7d`, `a529d3b` |
+| #44 | `promotion/qa-front-14` | `ffabb39` | `725b361` |
+| #45 | `promotion/qa-front-15` | `05610b5` | `72d464f`, `61bd24c`, `79ebe84`, `98b14ea` |
+| #46 | `promotion/qa-front-16` | `df7315a` | `b5d9d69`, `058d7b1` |
+| #47 | `promotion/qa-front-17` | `5b92d58` | `0288478`, `fc03016` |
+
+- **CI:** all five PRs passed every gate, each within 400 computable lines.
+- **Audit (norm 15) after the last merge:** `git diff origin/qa origin/develop` empty; 15.3 no
+  commit without trail; 15.4 no permanent-branch merge; 15.6 all 32 cited SHAs exist in
+  `develop`.
+- **Demo on `qa` (`5b92d58`):** `deploy/compose.yml` built from `qa` with the Clinical demo
+  container up, `http://localhost:8080`, DENTIST from `dev-session.json`: Pacientes → patient-a
+  record; patient-b in the same Clinical instance (`updateRoute`); Dashboard with Clinical
+  Analytics in professional scope (no Ingresos del mes); leaving to Facturación leaves no
+  Clinical root or stylesheet.
+
+## DEV-FRONT-HOME-002
+
+- **Story:** HU-IAM-001, Issue #1, `code-corhuila/dlc-docs#47`.
+- **Change (owner decision):** `/` is always the public Home, the entry where the visitor
+  chooses the flow; a signed-in visitor who opens `/login` goes to the Dashboard instead of IAM
+  Login (C04 "otherwise open dashboard"). The Home hero now uses the artwork's own ratio
+  (1802:872) at full width, so nothing is cropped, and the footer follows it directly.
+- **Difference with dlc-docs:** extends DEV-FRONT-HOME-001 (C04 redirects `/`; navigation-map
+  lists Home as deferred).
+- **TDD:** the route case failed first (RED); two shell tests that encoded the previous `/`
+  and `/login` behaviour were adapted (`/app` and `/recover-password`) and a new case covers the
+  signed-in Home; 108 tests pass (GREEN).
+- **Browser comparison (`npm run preview`, 1280×777 = mockup page size, signed in as DENTIST):**
+  header 0–63, hero 63–682, footer 682–775 (mockup 0–63, 63–684, 684–777); tooth, plant and
+  mirror visible as in mockup p. 1.

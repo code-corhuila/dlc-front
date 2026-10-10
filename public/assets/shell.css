@@ -530,3 +530,68 @@ a.dlc-public-link:hover {
     display: none;
   }
 }
+
+/* Top bar account menu (user chip). */
+.dlc-account {
+  position: relative;
+}
+
+button.dlc-user-chip {
+  font: 500 13px var(--dlc-font);
+  color: var(--dlc-text);
+  cursor: pointer;
+}
+
+.dlc-user-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 10;
+  min-width: 220px;
+  padding: 12px 0 6px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.14);
+}
+
+.dlc-user-menu[hidden] {
+  display: none;
+}
+
+.dlc-menu-name,
+.dlc-menu-role {
+  margin: 0;
+  padding: 0 16px;
+}
+
+.dlc-menu-name {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.dlc-menu-role {
+  margin-bottom: 8px;
+  color: var(--dlc-text-muted);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.dlc-menu-item {
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  padding: 10px 16px;
+  border: 0;
+  border-top: 1px solid #eef2f4;
+  background: none;
+  color: var(--dlc-text);
+  font: 14px var(--dlc-font);
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.dlc-menu-item:hover {
+  background: var(--dlc-active-bg);
+}

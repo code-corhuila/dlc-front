@@ -601,3 +601,15 @@ width; the mockup chip itself overflows the 1280 px page edge.
 
   The differing rows are Clinical-owned content (HU-CLN-003); reported to the Clinical team, not
   overridden by the shell (C03).
+
+## DEV-FRONT-HOME-003
+
+- **Story:** HU-IAM-001, Issue #1, `code-corhuila/dlc-docs#47`.
+- **Change:** Home header "Servicios" opens `/app/billing/procedures`, the procedure catalog that
+  mockup p. 7 presents as "Servicios, duraciones y precios" (Billing owner; Login first when
+  signed out). "Contacto" stays inactive: no contact page or data is specified in dlc-docs.
+- **Note:** "Login" on the Home goes to IAM Login when signed out and to the Dashboard when a
+  session exists (DEV-FRONT-HOME-002); with `dev-session.json` the preview starts signed in.
+- **TDD:** the public frame case failed first (RED) and passes (GREEN).
+- **Browser check (`npm run preview`):** a real click on Login with a session opened
+  `/app/dashboard`.

@@ -37,7 +37,10 @@ export function renderPublicFrame(document: Document): Frame {
   nav.setAttribute('aria-label', 'Sitio');
   const appointments = el('a', 'dlc-public-link', 'Citas');
   appointments.href = '/app/appointments/calendar';
-  nav.append(appointments, inactive('Servicios'), inactive('Contacto'));
+  // Mockup p. 7 presents the procedure catalog as the clinic's services (Billing owner).
+  const services = el('a', 'dlc-public-link', 'Servicios');
+  services.href = '/app/billing/procedures';
+  nav.append(appointments, services, inactive('Contacto'));
   const login = el('a', 'dlc-public-login', 'Login');
   login.href = '/login';
   const header = el('header', 'dlc-public-header');

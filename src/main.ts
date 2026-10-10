@@ -159,6 +159,8 @@ async function boot() {
     onRetry: loader.invalidate,
     reload: () => location.reload(),
     probe: loader.probe,
+    reachable: loader.reachable,
+    onLost: loader.markImportFailed,
     telemetry: telemetry.record,
   });
   session.subscribe(() => {

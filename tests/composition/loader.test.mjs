@@ -109,3 +109,12 @@ test('C07: probe checks the entry without importing it; revision re-reads the re
   assert.equal(await loader.revision(), 'r2');
   assert.deepEqual(imports, []);
 });
+
+test('owner decision: reachable checks a live entry without needing a failed import', async () => {
+  const { loader, requests } = setup([
+    json(registry),
+    { ok: false, status: 504, json: async () => ({}) },
+  ]);
+  assert.equal(await loader.reachable('clinical'), false);
+  assert.equal(requests[1].init.method, 'HEAD');
+});

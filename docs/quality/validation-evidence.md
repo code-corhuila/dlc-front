@@ -481,3 +481,24 @@ width; the mockup chip itself overflows the 1280 px page edge.
 - **Browser check (`npm run preview`, 1280×917):** after logout, logo → `/` shows the Home as in
   mockup p. 1; Login → `/login` with the IAM double; Citas → `/login`, then sign-in as
   SECRETARY_ASSISTANT → `/app/appointments/calendar` with Citas active.
+
+## DEV-FRONT-FIT-001
+
+- **Story:** HU-IAM-001, Issue #1, `code-corhuila/dlc-docs#47`.
+- **Change:** the common frame fits the viewport. The user chip no longer has the −23 px margin
+  copied from the mockup (where it overflows the page edge), the top bar keeps 24 px padding,
+  the search box shrinks before overflowing, the sidebar scrolls internally, short screens
+  (≤ 760 px high) use a smaller logo and tighter spacing, and narrow screens (≤ 960 px) switch
+  to an icon-only sidebar whose links keep `aria-label` and `title`.
+- **TDD:** the accessible-name case failed first (RED) and passes (GREEN); layout verified in
+  the browser.
+- **Browser check (`npm run preview`):** 1355×634 (reported screen): no horizontal scroll (scroll
+  width 1340 = client width), chip fully visible; 900×700: icon-only sidebar, no horizontal
+  scroll; 1280×917: logo, nav rhythm and footer unchanged, search at x 659 (mockup 636: the
+  mockup chip overflows the page).
+- **Observation for the Clinical team:** `.portal-placeholder` ("Seleccione un paciente") uses
+  `min-height: 100vh` inside the portal host, which adds vertical scroll under the shell header;
+  the shell does not override portal CSS (C03).
+- **Patients portal:** `code-corhuila/dlc-patient-portal` `develop` `ab65ce9` has empty
+  `deploy/compose.yml`, `deploy/nginx.conf` and `federation.config.js` and no contract v1
+  entry (`portalId`, `contractVersion`, `mount`), so it cannot be registered yet (C01–C03).

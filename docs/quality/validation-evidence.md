@@ -737,3 +737,26 @@ width; the mockup chip itself overflows the 1280 px page edge.
   a pre-registration checklist and the front team's registration steps. Linked from the README.
 - **TDD:** documentation only; context members checked against `src/main.ts` and
   `src/composition/shell.ts`.
+
+## DEV-FRONT-HTTP-001
+
+- **Story:** HU-IAM-001, Issue #1, `code-corhuila/dlc-docs#47`.
+- **Change:** `src/core/http/client.ts`, the C06 shared HTTP capability core, and
+  `src/core/http/messages.ts`, the single central message table.
+  - Only `GET/POST/PUT/PATCH/DELETE` to same-origin `/api/v1/...` (reuses the FC-13 target
+    validation); caller headers limited to Accept, Content-Type, If-Match, Idempotency-Key
+    (preserved as given); never caller Authorization/Cookie/correlation.
+  - Fresh `X-Correlation-Id` per attempt; private Bearer token from the session adapter on
+    protected operations; `public` operations send none; protected without token →
+    `SESSION_UNAVAILABLE` (status 0) with no network.
+  - 10 s deadline → `TIMEOUT` (status 0); network → `NETWORK_ERROR`; caller abort → `CANCELLED`
+    with an empty message; malformed error body → `INVALID_RESPONSE` with the real status;
+    owner envelope `error`/`details`/`traceId` kept, `traceId` falls back to the correlation id.
+  - Success `{ok, status, data, headers, correlationId}` exposing only Location, ETag,
+    Retry-After and X-Correlation-Id; 204/none → `null`, blob → `Blob`.
+  - Protected 401 calls `onUnauthorized` (session invalidation); public 401 does not.
+  - `retryable` only for GET network/timeout/429/5xx; writes are never replayed.
+- **TDD:** `tests/core/http/client.test.mjs` failed first with `ERR_MODULE_NOT_FOUND` (RED);
+  9/9 pass (GREEN) with a transport double, no network. Covers FC-13 and FC-14.
+- **Limitations:** the operation catalogue from the OpenAPI contracts and the per-mount
+  `context.http` capability come in the next increments.

@@ -8,6 +8,8 @@ import {
   scopeSession,
   type AuthPort,
 } from './core/session/session.ts';
+import { createHttpCapability } from './core/http/capability.ts';
+import { createHttpClient } from './core/http/client.ts';
 import { renderFrame } from './layout/frame.ts';
 import { orderNavigation } from './layout/navigation.ts';
 import { renderServiceError, renderUpdateBanner } from './layout/pages.ts';
@@ -86,6 +88,15 @@ async function boot() {
     return;
   }
 
+  const httpClient = createHttpClient({
+    fetch: (url, init) => fetch(url, init),
+    // The Auth adapter will hold the access token privately; the dev double has none,
+    // so protected calls fail locally with SESSION_UNAVAILABLE (C05, C06).
+    accessToken: () => null,
+    onUnauthorized: () => session.invalidate('UNAUTHORIZED'),
+    uuid: () => crypto.randomUUID(),
+  });
+
   const lifecycle = createLifecycle({
     container: frame.host,
     loadEntry: loader.loadEntry,
@@ -97,6 +108,7 @@ async function boot() {
           shell.request(target),
         ),
         session: scopeSession(session, base.signal),
+        http: createHttpCapability(httpClient, base.portalId, base.signal),
         reportFailure: (failure: unknown) =>
           void shell.reportFailure(base.mountId, failure),
         // C05: only IAM may complete authentication or control the session.

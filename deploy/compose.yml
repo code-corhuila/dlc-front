@@ -10,6 +10,8 @@ services:
       dockerfile: deploy/Dockerfile
     environment:
       CLINICAL_UPSTREAM: ${CLINICAL_UPSTREAM:-http://clinical-portal-demo}
+      # Base that replaces /api/v1: the mock serves paths at its root; a real Gateway keeps /api/v1.
+      GATEWAY_UPSTREAM: ${GATEWAY_UPSTREAM:-http://mock-gateway:4010}
     restart: unless-stopped
     healthcheck:
       test: ['CMD', 'wget', '-q', '-O', '/dev/null', 'http://127.0.0.1/healthz']
@@ -25,6 +27,18 @@ services:
     networks:
       - default
       - clinical
+
+  # Demo-only Gateway mock generated from the dlc-docs OpenAPI contracts (read-only mount,
+  # nothing is copied). Start with: docker compose -f deploy/compose.yml --profile mock up -d
+  mock-gateway:
+    container_name: dlc-mock-gateway
+    image: stoplight/prism:5@sha256:3f6d29e31bfe0b99587f0f6f79c423858dd6a2ea7e1e4658273ed930a78a9acf
+    profiles: ['mock']
+    command:
+      ['mock', '-h', '0.0.0.0', '-m', 'false', '/openapi/api-gateway.yaml']
+    volumes:
+      - ${DLC_DOCS_OPENAPI:-../../../../dlc-docs/dlc-docs/07-api/contracts/openapi}:/openapi:ro
+    restart: unless-stopped
 
 networks:
   # Created by dlc-clinical-portal's compose: start Clinical first (docs/demo).

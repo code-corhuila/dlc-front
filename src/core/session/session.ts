@@ -29,6 +29,8 @@ export type Establishment = Readonly<{
   expiresAt: string;
 }>;
 export type AuthPort = Readonly<{
+  /** Private access token for the HTTP client only; never part of a snapshot (C05). */
+  accessToken?: () => string | null;
   restore: () => Promise<Establishment | null>;
   complete: (input: {
     operationId: string;

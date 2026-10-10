@@ -10,9 +10,12 @@
       "navigation": [
         {
           "id": "administration",
-          "label": "Administración",
+          "label": "Gestión de usuarios",
           "path": "/app/administration",
-          "visibility": { "rolesAny": ["ADMINISTRATOR"], "permissionsAll": [] }
+          "visibility": {
+            "rolesAny": ["ADMINISTRATOR"],
+            "permissionsAll": []
+          }
         }
       ]
     },
@@ -26,7 +29,10 @@
           "id": "patients",
           "label": "Pacientes",
           "path": "/app/patients",
-          "visibility": { "rolesAny": [], "permissionsAll": [] }
+          "visibility": {
+            "rolesAny": [],
+            "permissionsAll": []
+          }
         }
       ]
     },
@@ -40,7 +46,19 @@
           "id": "appointments",
           "label": "Citas",
           "path": "/app/appointments/calendar",
-          "visibility": { "rolesAny": [], "permissionsAll": [] }
+          "visibility": {
+            "rolesAny": [],
+            "permissionsAll": []
+          }
+        },
+        {
+          "id": "availability",
+          "label": "Horarios y Slots",
+          "path": "/app/appointments/availability",
+          "visibility": {
+            "rolesAny": [],
+            "permissionsAll": []
+          }
         }
       ]
     },
@@ -54,7 +72,19 @@
           "id": "billing",
           "label": "Facturación",
           "path": "/app/billing",
-          "visibility": { "rolesAny": [], "permissionsAll": [] }
+          "visibility": {
+            "rolesAny": [],
+            "permissionsAll": []
+          }
+        },
+        {
+          "id": "procedures",
+          "label": "Procedimientos",
+          "path": "/app/billing/procedures",
+          "visibility": {
+            "rolesAny": [],
+            "permissionsAll": []
+          }
         }
       ]
     },
@@ -68,11 +98,14 @@
           "id": "dashboard",
           "label": "Dashboard",
           "path": "/app/dashboard",
-          "visibility": { "rolesAny": [], "permissionsAll": [] }
+          "visibility": {
+            "rolesAny": [],
+            "permissionsAll": []
+          }
         },
         {
           "id": "clinical",
-          "label": "Clínica",
+          "label": "Historia clínica",
           "path": "/app/clinical",
           "visibility": {
             "rolesAny": ["DENTIST", "ADMINISTRATOR"],

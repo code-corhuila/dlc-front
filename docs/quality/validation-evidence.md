@@ -256,3 +256,47 @@ width; the mockup chip itself overflows the 1280 px page edge.
 - **TDD:** two new cases in `tests/scripts/pr-gates.test.mjs` failed first (RED, 2 failures);
   after the change 8/8 pass (GREEN).
 - **Validation:** typecheck, lint, format:check, test, test:coverage, build: results in the PR.
+
+## DEV-FRONT-SIDEBAR-002
+
+- **Story:** HU-IAM-001, Issue #1, `code-corhuila/dlc-docs#47`.
+- **Change:** the sidebar renders the full mockup menu from owner-supplied registry descriptors:
+  Dashboard, Pacientes, Procedimientos, Citas, Horarios y Slots, Historia clínica, Facturación,
+  Gestión de usuarios. `orderNavigation` follows the mockup order (owner sub-areas next to their
+  owners); `activeItemId` picks the most specific entry whose path prefixes the URL, else the
+  owner's default entry; new `procedures` (bolt) and `availability` (clock) icons, and filled
+  person/tooth/gear glyphs as drawn in the mockup.
+- **Ownership (navigation-map.md):** Horarios y Slots → `dlc-appointments-portal`;
+  Procedimientos (price catalog) → `dlc-billing-portal`; per C04 these entries are owner
+  metadata. The preview registry (`fixtures/`) supplies them with placeholder paths
+  `/app/appointments/availability` and `/app/billing/procedures`, pending owner approval.
+- **Labels:** the preview registry uses the mockup labels ("Historia clínica", "Gestión de
+  usuarios"); the shell baseline keeps the navigation-map labels as fallback.
+- **TDD:** two new cases in `tests/layout/navigation.test.mjs` failed first (RED, 2 failures);
+  after the change all tests pass (84, GREEN).
+- **Browser check:** `npm run build` + `npm run preview`, 1280×917, `/app/billing/procedures`:
+  eight items in the mockup order with Procedimientos active.
+
+## DEV-FRONT-PUBLIC-001
+
+- **Story:** HU-IAM-001, Issue #1, `code-corhuila/dlc-docs#47`.
+- **Change:** public brand frame (`src/layout/publicFrame.ts`, mockup pp. 1-3) around the
+  IAM-owned public bases `/login` and `/recover-password`: header with the DI LUCCA emblem
+  (`public/assets/emblem.png`, cut from the mockup logo with a transparent background), word
+  mark, Citas/Servicios/Contacto and Login; footer with the copyright and Privacidad, Términos,
+  Cookies. The shell controller now holds two frames and swaps them by route (public IAM bases
+  vs protected routes); a slot is one owner inside one frame, so IAM moving from `/login` to
+  `/app/administration` is remounted in the app frame and stale app content is cleared.
+- **Ownership (navigation-map.md, ADR-011):** the Login card, recovery and MFA are
+  `dlc-iam-portal` content mounted in `#public-host`; the shared header/footer does not transfer
+  them to dlc-front. Home (`/`) is a deferred public reference: `/` keeps the C04 redirect to
+  Login or Dashboard. Citas/Servicios/Contacto and the legal links render inactive
+  (`aria-disabled`) because their pages are deferred. The background photos belong to the
+  Home/Login content, not to the frame.
+- **TDD:** `tests/layout/publicFrame.test.mjs` failed first with `ERR_MODULE_NOT_FOUND` (RED),
+  then 3/3; the shell frame-swap cases failed first (RED: 10 failures, then 1 for stale content)
+  and pass after the change (89 tests in total, GREEN).
+- **Browser comparison (`/login`, 1280×917, against mockup p. 2 at 1280 px):** emblem x 38
+  (mockup ≈ 40), word mark x 124 (124), Citas 239 (238), Servicios 328 (330), Contacto 446 (447),
+  Login button x 1179, 68×35, `#1EA296` (1179, 69×35, `#1EA296`), header 63 px with `#E5E7EB`
+  border (same); footer 93 px, legal links at 1024/1112/1192 (≈ 1015/1109/1194).

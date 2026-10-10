@@ -613,3 +613,63 @@ width; the mockup chip itself overflows the 1280 px page edge.
 - **TDD:** the public frame case failed first (RED) and passes (GREEN).
 - **Browser check (`npm run preview`):** a real click on Login with a session opened
   `/app/dashboard`.
+
+## QA-FRONT-PROMOTION-003
+
+- **Environment:** QA promotion of `9a81893` … `67aeef2` (second promotion record, Home entry
+  flow, top bar search and menu, sticky top bar and logo link, Home services link).
+
+| PR | Feeder branch | Merge commit in `qa` | Source commits |
+| --- | --- | --- | --- |
+| #53 | `promotion/qa-front-18` | `2cc2b06` | `9a81893`, `e7aa558` |
+| #54 | `promotion/qa-front-19` | `9e8e298` | `933a31c` |
+| #55 | `promotion/qa-front-20` | `899457d` | `e5b87ac`, `67aeef2` |
+
+- **CI:** the three PRs passed every gate within 400 computable lines.
+- **Full audit after the merge (all promotions 001–003):** `git diff origin/qa origin/develop`
+  empty; every `develop` commit has a `qa` commit with its `cherry picked from` trail except the
+  exact duplicates `9a7aeef`/`08a9e50` (QA-FRONT-PROMOTION-001) and the seed `5b339d1`, which is
+  `qa`'s own base; 15.2 no non-conformant subject; 15.3 no `qa` commit without trail; 15.4 no
+  permanent-branch merge; 15.6 all 37 trails point to SHAs in `develop`.
+- **PR format (Annex I):** the merged PRs #6–#51 lacked the required checklist section; it was
+  added to their descriptions (no secrets, no schema changes outside `-db`, contract respected),
+  and #52–#55 include it.
+- **Branch hygiene (norm 6.4.3, audit 15.1/15.5):** merged child branches were deleted after
+  their PRs, so the `promotion/*` feeders no longer appear in 15.1. Two teammate branches
+  (`feat/hu-iam-001-05`, `chore/front-shell-scaffold`) were deleted by mistake in that cleanup
+  and restored immediately at their exact SHAs (`0c041bf`, `438a134`). `qa-front-shell-scaffold`
+  (teammate, outside the 6.3 nomenclature) was not touched.
+
+## DEV-FRONT-DEMO-002
+
+- **Story:** HU-IAM-001, Issue #1, `code-corhuila/dlc-docs#47`.
+- **Change:** in the demo registry (`fixtures/`, development only) the Clinical-owned
+  "Historia clínica" descriptor points to `/app/clinical/patient-a`, so the sidebar opens the
+  Clinical record directly and the patient is chosen with Clinical's own demo selector. The demo
+  no longer depends on the Patients portal knowing Clinical's synthetic ids, avoiding a conflict
+  with the Patients team's own synthetic data.
+- **Request to the Clinical team:** offer patient selection in the `/app/clinical` prompt
+  ("Seleccione un paciente") so the descriptor can return to `/app/clinical`.
+- **TDD:** fixture data only; checked in the browser (container `:8080`, fixtures mounted).
+
+## DEV-FRONT-RECOVERY-001
+
+- **Story:** HU-IAM-001, Issue #1, `code-corhuila/dlc-docs#47`.
+- **Change:**
+  - Pacientes, Facturación (and Procedimientos) and Gestión de usuarios show the same local
+    PORTAL_UNAVAILABLE card as the other sections: their teams have not published an entry, so
+    the demo registry marks Patients and Billing as `0.0.0-pending` (no files) and the IAM double
+    refuses `/app/administration`. The Patients and Billing C02 doubles were removed, including
+    the list that used Clinical's synthetic ids.
+  - Recovery watch (C07): after a failed entry import the shell probes that entry every 5 s
+    (`HEAD`, `no-store`, never imported); when it answers, the card becomes "La sección ya está
+    disponible" with "Actualizar", which reloads the page (a failed module import stays cached
+    by the browser, C07). Mount failures are not probed. Nothing reloads by itself.
+  - Registry revision watch: every 30 s the shell re-reads `/portal-registry.json`; a new
+    revision shows a "Hay una nueva versión de DI LUCCA disponible — Actualizar" toast.
+- **TDD:** pages, loader and shell cases failed first (RED: 3, then 2 after the import-only and
+  reload refinements) and pass (114 tests, GREEN).
+- **Browser check (container `:8080`, ADMINISTRATOR):** Pacientes, Facturación and Gestión de
+  usuarios show the card (administration stays "no disponible" after 7 s: no false recovery);
+  `docker stop clinical-portal-demo` → Historia clínica card; `docker start` → card turns into
+  "La sección ya está disponible"; Actualizar → Clinical record of patient-a.

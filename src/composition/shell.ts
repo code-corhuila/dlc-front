@@ -9,6 +9,7 @@ import {
   renderNotFound,
   renderServiceError,
   renderUnavailable,
+  markAvailable,
 } from '../layout/pages.ts';
 import type { createLifecycle, Outcome } from './lifecycle.ts';
 import { validateNavigationTarget } from './navigationTarget.ts';
@@ -40,6 +41,9 @@ export type ShellDeps = Readonly<{
   navigation: () => readonly NavigationDescriptor[];
   onRetry: () => void;
   reload: () => void;
+  /** C07 recovery watch: probes a down portal and announces when it answers again. */
+  probe?: (portalId: PortalId) => Promise<boolean>;
+  schedule?: (tick: () => Promise<void>, ms: number) => () => void;
   /** Safe C07 record: code and identifiers only, never content or credentials. */
   telemetry?: (event: {
     code: string;
@@ -83,17 +87,35 @@ export function createShell(deps: ShellDeps) {
     (heading ?? frame.main).focus();
   }
 
-  function notice(container: HTMLElement, outcome: Outcome) {
+  function notice(
+    container: HTMLElement,
+    outcome: Outcome,
+    portalId?: PortalId,
+  ) {
     const quarantined = outcome.status === 'quarantined';
-    container.replaceChildren(
-      renderUnavailable(document, {
-        onRetry: () => {
-          if (quarantined) return deps.reload();
-          deps.onRetry();
-          void transition(history.current(), 'replace', index);
-        },
-      }),
-    );
+    const card = renderUnavailable(document, {
+      onRetry: () => {
+        if (quarantined) return deps.reload();
+        deps.onRetry();
+        void transition(history.current(), 'replace', index);
+      },
+    });
+    container.replaceChildren(card);
+    if (!portalId || !deps.probe || quarantined) return;
+    const probe = deps.probe;
+    const schedule =
+      deps.schedule ??
+      ((tick, ms) => {
+        const id = setInterval(() => void tick(), ms);
+        return () => clearInterval(id);
+      });
+    const stop = schedule(async () => {
+      if (!card.isConnected) return stop();
+      if (await probe(portalId)) {
+        stop();
+        markAvailable(card, deps.reload);
+      }
+    }, 5000);
   }
 
   async function mountInto(
@@ -103,7 +125,7 @@ export function createShell(deps: ShellDeps) {
   ) {
     const outcome = await lifecycle.show(id, route, container);
     if (outcome.status === 'failed' || outcome.status === 'quarantined')
-      notice(container, outcome);
+      notice(container, outcome, id);
     return outcome;
   }
 
@@ -214,7 +236,11 @@ export function createShell(deps: ShellDeps) {
     if (!container || !portalId) return false;
     deps.telemetry?.({ code, portalId, mountId });
     if (container === frame.host) slot = null;
-    notice(container, { status: 'failed', code: 'PORTAL_UNAVAILABLE' });
+    notice(
+      container,
+      { status: 'failed', code: 'PORTAL_UNAVAILABLE' },
+      portalId,
+    );
     return true;
   }
 

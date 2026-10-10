@@ -143,3 +143,11 @@ test('C05: setUser re-renders the role menu and identity for a new persona', () 
   assert.equal(document.querySelector('.dlc-role').textContent, 'SECRETARÍA');
   assert.equal(document.querySelectorAll('nav a[aria-current]').length, 0);
 });
+
+test('icon-only sidebar keeps an accessible name and tooltip per link', () => {
+  const { document } = setup();
+  for (const link of document.querySelectorAll('nav a')) {
+    assert.equal(link.getAttribute('aria-label'), link.textContent.trim());
+    assert.equal(link.getAttribute('title'), link.textContent.trim());
+  }
+});

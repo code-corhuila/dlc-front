@@ -120,6 +120,8 @@ export function renderFrame(document: Document, options: FrameOptions): Frame {
         const link = el('a', 'dlc-nav-item');
         link.href = item.path;
         link.dataset.id = item.id;
+        link.title = item.label; // Icon-only sidebar on narrow screens.
+        link.setAttribute('aria-label', item.label);
         link.append(icon(document, item.id), el('span', '', item.label));
         return link;
       }),

@@ -825,3 +825,30 @@ width; the mockup chip itself overflows the 1280 px page edge.
   call reached the network); without `Authorization` the mock answers 401; mock stopped → 502
   mapped to `INVALID_RESPONSE`, retryable read, central "servicio no disponible" message.
 - **TDD:** configuration and fixture wiring; existing 132 tests pass; verified by commands above.
+
+## DEV-FRONT-BOT-001
+
+- **Story:** HU-IAM-001, Issue #1, `code-corhuila/dlc-docs#47`.
+- **Scope:** teacher-bot reviews (norm 9.7–9.9) found on PRs #3, #4 and #5 (teammate PRs that
+  created the scaffold and `requestTarget`); PRs #6–#76 have no bot review. Disposition of every
+  finding:
+
+| PR · finding | Disposition |
+| --- | --- |
+| #3.1 (review 1) CODEOWNERS points to `ods-docs` | Applied: the merged comment names `code-corhuila/dlc-docs`; the owner rule is unchanged (Annex I forbids other edits) |
+| #3.2 PR size figures disagree | Applied from #6 on: size measured by `scripts/pr-gates.mjs lines` in CI |
+| #3.3 Verification only syntactic | Applied: CI runs typecheck, lint, format, tests, coverage, build and PR gates; browser checks recorded per increment |
+| #3.4 Portal technologies not verifiable from the diff | Applied: README cites ADR-011 and contract v1; the table matches ADR-011 |
+| #3.1 (review 2) README contradiction about technology | Applied: README rewritten (DEV-FRONT-DOCS-001): no framework, integration through contract v1 |
+| #3.2 (review 2) Session/HTTP contract undefined | Applied: C02/C05/C06 implemented (`context.session`, `context.http`) and the integration guide published |
+| #3.3 (review 2) No `.env.example` | Applied in DEV-FRONT-QUALITY-001; now lists every variable |
+| #3.4 / #4.4 Single CODEOWNERS rule | Not applied: CODEOWNERS is teacher-owned and must not be modified (Annex I, norm 13) |
+| #4.1 Base branch contradicts promotion | Historical teammate PR; not repeatable: promotions now use `promotion/*` from `qa` with PRs into `qa` and the branch gate checks the target (QA-FRONT-PROMOTION-001…) |
+| #4.2 `qa-` prefix vs `qa/` | Applied as documented exception `promotion/*` (DEV-FRONT-GATES-002); escalation to the professor still pending |
+| #4.3 Promotion evidence local only | Partly applied: CI gates check branch, size, commits and PR body; the `-x` trailer is audited with the norm 15 commands and recorded per promotion. A CI trailer check is not added because norm 10 audits it on `qa` |
+| #5.1 Unicode confusable separators | Applied in this PR: segments are NFKC-normalised and U+2044/U+2215/U+29F8/U+29F9 rejected in `requestTarget` and `navigationTarget` |
+| #5.2 Allowlist not traceable to the contract | Applied: operations come from a catalogue generated from the dlc-docs OpenAPI (DEV-FRONT-HTTP-002); the header allowlist and `/api/v1` prefix are C06 text, now tested through the catalogue |
+| #5.3 Single `INVALID_REQUEST` code | Not applied: C06 defines `INVALID_REQUEST` as the local code; diagnosis uses telemetry with correlation ids (DEV-FRONT-TELEMETRY-001) |
+| #5.4 Node engine `>=24.12 <25` | Not applied: norm 5.5.1 admits Node 22/24 and portals do not install this package; they consume it at runtime through contract v1 |
+
+- **TDD:** the Unicode cases failed first (RED) and pass after the change (GREEN, 134 tests).

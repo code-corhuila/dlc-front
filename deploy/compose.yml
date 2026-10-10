@@ -1,0 +1,25 @@
+# Front-only demo: the compositor plus the Clinical containers started from dlc-clinical-portal
+# (docker compose -f deploy/compose.yml up --build -d in that repository).
+name: dlc-front
+
+services:
+  dlc-front:
+    container_name: dlc-front
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+    environment:
+      CLINICAL_UPSTREAM: ${CLINICAL_UPSTREAM:-http://clinical-portal-demo}
+    ports:
+      - '${FRONT_PORT:-8080}:80'
+    volumes:
+      # Demo deployment data (develop only): registry, C02 test doubles, dev Auth double.
+      - ../fixtures:/usr/share/nginx/deployment:ro
+    networks:
+      - default
+      - clinical
+
+networks:
+  clinical:
+    external: true
+    name: ${CLINICAL_NETWORK:-dlc-clinical-portal_default}

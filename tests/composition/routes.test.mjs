@@ -7,12 +7,8 @@ const auth = (href) => resolveRoute(new URL(href, 'https://dlc.test'), true);
 const anon = (href) => resolveRoute(new URL(href, 'https://dlc.test'), false);
 const owner = (r) => [r.kind, r.portalId, r.basePath, r.localPath];
 
-test('C04: entry redirects depend on session state', () => {
-  assert.deepEqual(anon('/'), {
-    kind: 'redirect',
-    to: '/login',
-    replace: true,
-  });
+test('C04 + owner decision: anonymous / is the public Home; authenticated / is the dashboard', () => {
+  assert.deepEqual(anon('/'), { kind: 'home' });
   assert.deepEqual(auth('/'), {
     kind: 'redirect',
     to: '/app/dashboard',

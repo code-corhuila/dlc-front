@@ -3,6 +3,7 @@ import test from 'node:test';
 import { Window } from 'happy-dom';
 import {
   renderDashboard,
+  renderHome,
   renderNotFound,
   renderServiceError,
   renderUnavailable,
@@ -86,4 +87,21 @@ test('service error pages share the 404 card: heading, message, one action', () 
   cases[0][0].querySelector('button').click();
   cases[2][0].querySelector('button').click();
   assert.equal(retried, 2);
+});
+
+test('Home (mockup p. 1): hero image as background with an accessible text equivalent', () => {
+  const home = renderHome(doc());
+  assert.equal(home.className, 'dlc-home');
+  assert.equal(home.querySelector('h1').textContent, '¡Bienvenido!');
+  assert.equal(home.querySelector('h1').getAttribute('tabindex'), '-1');
+  assert.match(home.textContent, /Tu sonrisa, nuestra prioridad./);
+  assert.deepEqual(
+    [...home.querySelectorAll('li')].map((li) => li.textContent),
+    [
+      'Seguridad y confianza',
+      'Tecnología avanzada',
+      'Cuidado personalizado',
+      'Sonrisas que transforman',
+    ],
+  );
 });

@@ -29,11 +29,15 @@ export function renderPublicFrame(document: Document): Frame {
   const mark = el('img', 'dlc-public-mark');
   mark.src = '/assets/emblem.png';
   mark.alt = '';
-  const home = el('span', 'dlc-public-brand');
+  const home = el('a', 'dlc-public-brand');
+  home.href = '/';
+  home.setAttribute('aria-label', 'DI LUCCA, inicio');
   home.append(mark, brand('dlc-brand-word'));
   const nav = el('nav', 'dlc-public-nav');
   nav.setAttribute('aria-label', 'Sitio');
-  nav.append(inactive('Citas'), inactive('Servicios'), inactive('Contacto'));
+  const appointments = el('a', 'dlc-public-link', 'Citas');
+  appointments.href = '/app/appointments/calendar';
+  nav.append(appointments, inactive('Servicios'), inactive('Contacto'));
   const login = el('a', 'dlc-public-login', 'Login');
   login.href = '/login';
   const header = el('header', 'dlc-public-header');

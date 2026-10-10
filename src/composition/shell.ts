@@ -5,6 +5,7 @@ import type {
 } from '../layout/navigation.ts';
 import {
   renderDashboard,
+  renderHome,
   renderNotFound,
   renderServiceError,
   renderUnavailable,
@@ -164,6 +165,13 @@ export function createShell(deps: ShellDeps) {
     }
 
     slot = null;
+    if (resolution.kind === 'home') {
+      use('public');
+      frame.host.replaceChildren(renderHome(document));
+      commit(url, mode, popIndex);
+      focusContent();
+      return 'applied';
+    }
     use('app');
     if (resolution.kind === 'dashboard') {
       const user = deps.user();

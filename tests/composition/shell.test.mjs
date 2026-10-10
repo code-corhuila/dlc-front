@@ -360,3 +360,9 @@ test('C05: unavailable or expired sessions show their page instead of Login', as
   );
   assert.equal(expired.shell.consumeReturn(), '/app/billing');
 });
+
+test('Home: anonymous / renders the Home in the public frame without redirecting', async () => {
+  const { document, history } = await setup('/', {}, { authenticated: false });
+  assert.equal(history.current().pathname, '/');
+  assert.ok(document.querySelector('.dlc-public #public-host .dlc-home'));
+});

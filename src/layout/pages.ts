@@ -158,3 +158,33 @@ export function renderDashboard(document: Document, options: DashboardOptions) {
   );
   return { root, analyticsHost };
 }
+
+/**
+ * Public Home (mockup p. 1). The hero artwork already contains its text, so the same
+ * content is provided as visually hidden text for assistive technology.
+ */
+export function renderHome(document: Document): HTMLElement {
+  const el = make(document);
+  const home = el('section', 'dlc-home');
+  const text = el('div', 'dlc-visually-hidden');
+  const pillars = el('ul');
+  for (const pillar of [
+    'Seguridad y confianza',
+    'Tecnología avanzada',
+    'Cuidado personalizado',
+    'Sonrisas que transforman',
+  ])
+    pillars.append(el('li', '', pillar));
+  text.append(
+    heading(document, '¡Bienvenido!'),
+    el('p', '', 'Tu sonrisa, nuestra prioridad.'),
+    el(
+      'p',
+      '',
+      'En DI LUCCA combinamos tecnología, experiencia y un trato humano para cuidar de ti y tu salud bucal.',
+    ),
+    pillars,
+  );
+  home.append(text);
+  return home;
+}

@@ -692,3 +692,26 @@ width; the mockup chip itself overflows the 1280 px page edge.
   Browser: `/app/clinical/patient-a` renders the record as Dra. Valentina Ruiz.
 - **Limitation:** order dependency on the Clinical network remains (no shared network owner
   yet; would be defined by `dlc-infra`).
+
+## QA-FRONT-PROMOTION-004
+
+| PR | Feeder branch | Merge commit in `qa` | Source commits |
+| --- | --- | --- | --- |
+| #60 | `promotion/qa-front-21` | `22c61af` | `f29f5f5`, `14da1c8`, `638e290` |
+| #61 | `promotion/qa-front-22` | `1f17b49` | `a3eebd0` |
+
+- **CI:** both PRs passed every gate; feeder branches deleted after merge.
+- **Audit after the merge:** `git diff origin/qa origin/develop` empty; 15.3 no commit without
+  trail; 15.4 no permanent-branch merge; 15.6 all 41 trails exist in `develop`; 15.1 only the
+  teammate branch `qa-front-shell-scaffold` remains outside the nomenclature.
+- **Deployment check on the promoted content:** see DEV-FRONT-DEPLOY-002 (from-scratch build,
+  healthy container, Clinical down/up).
+
+## DEV-FRONT-DOCS-001
+
+- **Story:** HU-IAM-001, Issue #1, `code-corhuila/dlc-docs#47`.
+- **Change:** README rewritten for norm 5.1 (purpose, how to run with npm and Docker, dependencies,
+  integration steps for portals, source layout, quality commands); spec updated with the status
+  of each requirement, the project-owner decisions that differ from dlc-docs, and the next
+  increments.
+- **TDD:** documentation only; commands in the README were run in DEV-FRONT-DEPLOY-002.

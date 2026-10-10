@@ -24,6 +24,8 @@ export type Frame = Readonly<{
   host: HTMLElement;
   main: HTMLElement;
   setActive: (path: string) => void;
+  /** Re-renders role-filtered navigation and identity (C05 session change). */
+  setUser?: (user: FrameUser) => void;
 }>;
 
 const ROLE_BADGES: Readonly<Record<string, string>> = {
@@ -50,17 +52,9 @@ export function renderFrame(document: Document, options: FrameOptions): Frame {
     if (text !== undefined) node.textContent = text;
     return node;
   };
-  const { user } = options;
-
+  let path = options.path;
   const nav = el('nav', 'dlc-nav');
   nav.setAttribute('aria-label', 'Principal');
-  for (const item of visibleItems(options.navigation, user)) {
-    const link = el('a', 'dlc-nav-item');
-    link.href = item.path;
-    link.dataset.id = item.id;
-    link.append(icon(document, item.id), el('span', '', item.label));
-    nav.append(link);
-  }
 
   const logo = el('img', 'dlc-logo');
   logo.src = '/assets/logo.png';
@@ -72,11 +66,13 @@ export function renderFrame(document: Document, options: FrameOptions): Frame {
   logout.append(icon(document, 'logout'));
   logout.addEventListener('click', () => options.onLogout());
 
-  const role = user.roles.map((r) => ROLE_BADGES[r]).find(Boolean) ?? '';
+  const name = el('span', 'dlc-name');
+  const role = el('span', 'dlc-role');
   const who = el('div', 'dlc-sidebar-who');
-  who.append(el('span', 'dlc-name', user.name), el('span', 'dlc-role', role));
+  who.append(name, role);
+  const avatar = el('span', 'dlc-avatar');
   const footer = el('div', 'dlc-sidebar-user');
-  footer.append(el('span', 'dlc-avatar', initials(user.name, 2)), who, logout);
+  footer.append(avatar, who, logout);
 
   const sidebar = el('aside', 'dlc-sidebar');
   sidebar.append(logo, nav, footer);
@@ -90,11 +86,9 @@ export function renderFrame(document: Document, options: FrameOptions): Frame {
   searchBox.append(icon(document, 'search'), search);
 
   const chip = el('div', 'dlc-user-chip');
-  chip.append(
-    el('span', 'dlc-avatar', initials(user.name, 1)),
-    el('span', 'dlc-chip-name', user.name),
-    icon(document, 'chevron'),
-  );
+  const chipAvatar = el('span', 'dlc-avatar');
+  const chipName = el('span', 'dlc-chip-name');
+  chip.append(chipAvatar, chipName, icon(document, 'chevron'));
   const header = el('header', 'dlc-topbar');
   header.setAttribute('role', 'banner');
   header.append(searchBox, chip);
@@ -110,13 +104,33 @@ export function renderFrame(document: Document, options: FrameOptions): Frame {
   column.append(header, main);
   const root = el('div', 'dlc-shell');
   root.append(sidebar, column);
-  const setActive = (path: string) => {
-    const active = activeItemId(options.navigation, path);
+  let visible: NavigationDescriptor[] = [];
+  const setActive = (next: string) => {
+    path = next;
+    const active = activeItemId(visible, path);
     for (const link of nav.querySelectorAll('a')) {
       if (link.dataset.id === active) link.setAttribute('aria-current', 'page');
       else link.removeAttribute('aria-current');
     }
   };
-  setActive(options.path);
-  return { root, host, main, setActive };
+  const setUser = (user: FrameUser) => {
+    visible = visibleItems(options.navigation, user);
+    nav.replaceChildren(
+      ...visible.map((item) => {
+        const link = el('a', 'dlc-nav-item');
+        link.href = item.path;
+        link.dataset.id = item.id;
+        link.append(icon(document, item.id), el('span', '', item.label));
+        return link;
+      }),
+    );
+    name.textContent = chipName.textContent = user.name;
+    role.textContent =
+      user.roles.map((r) => ROLE_BADGES[r]).find(Boolean) ?? '';
+    avatar.textContent = initials(user.name, 2);
+    chipAvatar.textContent = initials(user.name, 1);
+    setActive(path);
+  };
+  setUser(options.user);
+  return { root, host, main, setActive, setUser };
 }

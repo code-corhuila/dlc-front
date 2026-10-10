@@ -346,3 +346,24 @@ width; the mockup chip itself overflows the 1280 px page edge.
   1280×917: `/` → dashboard with the Clinical Analytics double, eight-item menu, Procedimientos
   active on `/app/billing/procedures`, local PORTAL_UNAVAILABLE on Citas, public frame with the
   IAM double on `/login`.
+
+## DEV-FRONT-SESSION-001
+
+- **Story:** HU-IAM-001, Issue #1, `code-corhuila/dlc-docs#47`.
+- **Change:** `src/core/session/session.ts`, the C05 browser projection behind an `AuthPort`:
+  snapshot `{state, revision, user, permissions, expiresAt, reason}` (states resolving,
+  authenticated, anonymous, expired, unavailable), frozen defensive copies exposing only
+  `{id, name, roles}`, malformed data → unavailable/INVALID_RESPONSE, `subscribe` delivering the
+  current snapshot immediately with isolated listener failures, IAM-only `complete` limited to
+  `AuthVerifyMFAchallenge`/`AuthConfirmMFAenrollment`, `logout` that clears local state before
+  asking Auth and reports an outage as unconfirmed, and `invalidate` for protected 401/expiry.
+  `scopeSession` gives each mount a read-only `{getSnapshot, subscribe}` released when its
+  signal aborts (calls afterwards throw CANCELLED).
+- **Norm 5.5.2 vs C05:** the norm's development sign-in uses a `dlc-infra` token; C05 makes Auth
+  the session authority. The port keeps tokens inside the Auth adapter; the development Auth
+  double (next increment) plugs into the same port and is replaced by the real Auth adapter when
+  IAM/Auth exist. Cross-tab Web Locks/BroadcastChannel and CSRF/refresh (FC-10) belong to that
+  real adapter and are not implemented here.
+- **TDD:** `tests/core/session/session.test.mjs` failed first with `ERR_MODULE_NOT_FOUND` (RED);
+  after implementation 8/8 pass (GREEN). Covers the C05 parts of FC-09, FC-11 and FC-12.
+- **Validation:** typecheck, lint, format:check, test, test:coverage, build: results in the PR.

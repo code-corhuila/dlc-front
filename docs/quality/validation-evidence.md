@@ -577,3 +577,27 @@ width; the mockup chip itself overflows the 1280 px page edge.
 - **Browser check (`npm run preview`, 1280×917):** "sintético b" + Enter → `/app/patients?q=…`
   listing only Paciente sintético B; chip → menu with Dra. Valentina Ruiz / ODONTÓLOGO, no
   horizontal overflow; outside click closes it; Cerrar sesión → `/login`.
+
+## DEV-FRONT-DASHBOARD-CHECK-001
+
+- **Story:** HU-IAM-001, Issue #1, `code-corhuila/dlc-docs#47`.
+- **Change:** the top bar stays visible while the page scrolls (sticky, page background), and
+  the sidebar logo links to the Home entry (`/`, `aria-label` "DI LUCCA, inicio"; image now
+  decorative inside the link).
+- **TDD:** the logo-link case failed first (RED) and passes; 110 tests (GREEN).
+- **Browser check (`npm run preview`, 1280×917):** after scrolling 86 px the top bar stays at
+  y 0, 63 px high; logo box still 36,56,158×128 and first item at y 211; clicking the logo opens
+  `/` with the Home.
+- **Dashboard vs mockup p. 4 (ADMINISTRATOR, 1280×917):**
+
+| Element | Owner | Mockup | Implementation | Result |
+| --- | --- | --- | --- | --- |
+| Sidebar, top bar | shell | measured in DEV-FRONT-FRAME-002 | unchanged | match |
+| KPI cards | Clinical | x 280/612/946, 309×148, y 204 | x 280/608/937, 304×143, y 194 | close (scrollbar −15 px) |
+| Actividad semanal | Clinical | 280,402, 641×454, "This Week" selector | 280,361, 625×332, no selector | differs |
+| Próximas citas | Clinical | 946,402, 310×508, "View All Appointments" | 929,361, 312×332, no link | differs |
+| "Actualizado: hh:mm UTC" | Clinical | absent | present | differs |
+| Shortcuts below Analytics | shell | absent | present | C04 deviation (shell shortcuts) |
+
+  The differing rows are Clinical-owned content (HU-CLN-003); reported to the Clinical team, not
+  overridden by the shell (C03).

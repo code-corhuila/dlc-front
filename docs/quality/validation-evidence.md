@@ -651,3 +651,25 @@ width; the mockup chip itself overflows the 1280 px page edge.
 - **Request to the Clinical team:** offer patient selection in the `/app/clinical` prompt
   ("Seleccione un paciente") so the descriptor can return to `/app/clinical`.
 - **TDD:** fixture data only; checked in the browser (container `:8080`, fixtures mounted).
+
+## DEV-FRONT-RECOVERY-001
+
+- **Story:** HU-IAM-001, Issue #1, `code-corhuila/dlc-docs#47`.
+- **Change:**
+  - Pacientes, Facturación (and Procedimientos) and Gestión de usuarios show the same local
+    PORTAL_UNAVAILABLE card as the other sections: their teams have not published an entry, so
+    the demo registry marks Patients and Billing as `0.0.0-pending` (no files) and the IAM double
+    refuses `/app/administration`. The Patients and Billing C02 doubles were removed, including
+    the list that used Clinical's synthetic ids.
+  - Recovery watch (C07): after a failed entry import the shell probes that entry every 5 s
+    (`HEAD`, `no-store`, never imported); when it answers, the card becomes "La sección ya está
+    disponible" with "Actualizar", which reloads the page (a failed module import stays cached
+    by the browser, C07). Mount failures are not probed. Nothing reloads by itself.
+  - Registry revision watch: every 30 s the shell re-reads `/portal-registry.json`; a new
+    revision shows a "Hay una nueva versión de DI LUCCA disponible — Actualizar" toast.
+- **TDD:** pages, loader and shell cases failed first (RED: 3, then 2 after the import-only and
+  reload refinements) and pass (114 tests, GREEN).
+- **Browser check (container `:8080`, ADMINISTRATOR):** Pacientes, Facturación and Gestión de
+  usuarios show the card (administration stays "no disponible" after 7 s: no false recovery);
+  `docker stop clinical-portal-demo` → Historia clínica card; `docker start` → card turns into
+  "La sección ya está disponible"; Actualizar → Clinical record of patient-a.

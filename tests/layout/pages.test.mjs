@@ -7,6 +7,8 @@ import {
   renderNotFound,
   renderServiceError,
   renderUnavailable,
+  markAvailable,
+  renderUpdateBanner,
 } from '../../src/layout/pages.ts';
 import { BASELINE_NAVIGATION } from '../../src/layout/navigation.ts';
 
@@ -104,4 +106,28 @@ test('Home (mockup p. 1): hero image as background with an accessible text equiv
       'Sonrisas que transforman',
     ],
   );
+});
+
+test('C07: an unavailable notice can announce that the section is back', () => {
+  const notice = renderUnavailable(doc(), { onRetry: () => {} });
+  let reloads = 0;
+  markAvailable(notice, () => (reloads += 1));
+  notice.querySelector('button').click();
+  assert.equal(reloads, 1);
+  assert.equal(notice.dataset.code, 'PORTAL_AVAILABLE');
+  assert.equal(notice.getAttribute('role'), 'status');
+  assert.equal(
+    notice.querySelector('h2').textContent,
+    'La sección ya está disponible',
+  );
+  assert.equal(notice.querySelector('button').textContent, 'Actualizar');
+});
+
+test('registry change banner offers an explicit reload', () => {
+  let reloads = 0;
+  const banner = renderUpdateBanner(doc(), () => (reloads += 1));
+  assert.equal(banner.getAttribute('role'), 'status');
+  assert.match(banner.textContent, /nueva versión/);
+  banner.querySelector('button').click();
+  assert.equal(reloads, 1);
 });

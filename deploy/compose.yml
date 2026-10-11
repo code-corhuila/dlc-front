@@ -8,6 +8,7 @@ services:
       context: ..
       dockerfile: deploy/Dockerfile
     environment:
+      PATIENT_UPSTREAM: ${PATIENT_UPSTREAM:-http://patient-portal-demo}
       CLINICAL_UPSTREAM: ${CLINICAL_UPSTREAM:-http://clinical-portal-demo}
       APPOINTMENTS_UPSTREAM: ${APPOINTMENTS_UPSTREAM:-http://appointments-portal-demo}
       BILLING_UPSTREAM: ${BILLING_UPSTREAM:-http://billing-portal-demo}
@@ -30,6 +31,7 @@ services:
       - clinical
       - appointments
       - billing
+      - patient
 
   # Demo-only Gateway mock generated from the dlc-docs OpenAPI contracts (read-only mount,
   # nothing is copied). Start with: docker compose -f deploy/compose.yml --profile mock up -d
@@ -44,6 +46,10 @@ services:
     restart: unless-stopped
 
 networks:
+  # Created by the independently deployed Patients portal.
+  patient:
+    external: true
+    name: ${PATIENT_NETWORK:-dlc-patient-portal_default}
   # Created by dlc-clinical-portal's compose: start Clinical first (docs/demo).
   clinical:
     external: true

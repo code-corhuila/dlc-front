@@ -38,6 +38,7 @@ async function proxy(origin, path, method, response) {
 }
 
 export function createPreviewServer({
+  iamOrigin = process.env.IAM_ORIGIN ?? 'http://127.0.0.1:4202',
   patientOrigin = process.env.PATIENT_ORIGIN ?? 'http://127.0.0.1:4177',
   clinicalOrigin = process.env.CLINICAL_ORIGIN ?? 'http://localhost:4175',
   billingOrigin = process.env.BILLING_ORIGIN ?? 'http://localhost:4204',
@@ -49,6 +50,10 @@ export function createPreviewServer({
         .end();
     }
     const pathname = new URL(request.url, 'http://x').pathname;
+
+    if (pathname.startsWith('/portals/iam/')) {
+      return proxy(iamOrigin, request.url, request.method, response);
+    }
 
     if (pathname.startsWith('/portals/patient/')) {
       return proxy(patientOrigin, request.url, request.method, response);

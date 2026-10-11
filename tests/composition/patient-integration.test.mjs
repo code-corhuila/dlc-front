@@ -96,7 +96,7 @@ test('C01: preview serves owner assets, HEAD and real errors while preserving Cl
   assert.equal((await fetch(origin + entry, { method: 'POST' })).status, 405);
   for (const path of [
     '/portals/patient/0.1.0-demo/missing.js',
-    '/portals/iam/missing',
+    '/portals/unknown/missing',
   ]) {
     const response = await fetch(origin + path);
     assert.equal(response.status, 404);

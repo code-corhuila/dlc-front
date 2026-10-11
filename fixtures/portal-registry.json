@@ -1,13 +1,22 @@
 {
   "contractVersion": 1,
-  "registryRevision": "local-preview-patient-billing-demo",
+  "registryRevision": "local-preview-iam-integration",
   "portals": [
     {
       "portalId": "iam",
       "repository": "dlc-iam-portal",
-      "release": "0.0.0-double",
-      "entryUrl": "/portals/iam/0.0.0-double/entry.js",
+      "release": "0.1.0-local",
+      "entryUrl": "/portals/iam/0.1.0-local/entry.js",
       "navigation": [
+        {
+          "id": "sessions",
+          "label": "Mis sesiones",
+          "path": "/app/sessions",
+          "visibility": {
+            "rolesAny": [],
+            "permissionsAll": []
+          }
+        },
         {
           "id": "administration",
           "label": "Gestión de usuarios",

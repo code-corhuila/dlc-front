@@ -29,6 +29,7 @@ const OWNERS: readonly (readonly [string, PortalId, boolean])[] = [
   ['/login', 'iam', false],
   ['/recover-password', 'iam', false],
   ['/app/administration', 'iam', true],
+  ['/app/sessions', 'iam', true],
   ['/app/patients', 'patient', true],
   ['/app/appointments', 'appointments', true],
   ['/app/billing', 'billing', true],

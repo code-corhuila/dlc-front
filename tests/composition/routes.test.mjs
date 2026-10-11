@@ -36,6 +36,12 @@ test('C01/C04: each owner prefix selects its portal with base and local path', (
     '/app/administration',
     '/users/7',
   ]);
+  assert.deepEqual(owner(auth('/app/sessions')), [
+    'portal',
+    'iam',
+    '/app/sessions',
+    '/',
+  ]);
   assert.deepEqual(owner(auth('/app/patients/new')), [
     'portal',
     'patient',
@@ -98,6 +104,10 @@ test('C04: protected routes need a session; anonymous users go to IAM login', ()
   assert.deepEqual(anon('/app/billing'), {
     kind: 'sign-in',
     returnPath: '/app/billing',
+  });
+  assert.deepEqual(anon('/app/sessions'), {
+    kind: 'sign-in',
+    returnPath: '/app/sessions',
   });
   assert.equal(anon('/login').kind, 'portal');
 });

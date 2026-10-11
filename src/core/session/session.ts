@@ -42,7 +42,11 @@ export type ControlResult =
   | Readonly<{ ok: true; status: number; data: SessionSnapshot | null }>
   | Readonly<{ ok: false; status: 0; error: string }>;
 
-const COMPLETIONS = ['AuthVerifyMFAchallenge', 'AuthConfirmMFAenrollment'];
+const COMPLETIONS = [
+  'AuthLogin',
+  'AuthVerifyMFAchallenge',
+  'AuthConfirmMFAenrollment',
+];
 const strings = (v: unknown): v is string[] =>
   Array.isArray(v) && v.every((s) => typeof s === 'string');
 
@@ -118,7 +122,7 @@ export function createSession(auth: AuthPort) {
         publish('unavailable', 'DEPENDENCY_UNAVAILABLE');
       }
     },
-    /** IAM-only MFA completion; the proof body is passed unchanged to Auth. */
+    /** IAM-only completion; the body is passed unchanged to the Auth adapter. */
     async complete(input: {
       operationId: unknown;
       body: unknown;

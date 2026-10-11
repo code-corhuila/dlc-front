@@ -40,8 +40,11 @@ test('C06: operations that require Idempotency-Key reject without a valid one', 
   assert.equal(ok('iam', ...create, key).ok, true);
 });
 
-test('C05/C06: public Auth is IAM-only; cookie and MFA controls are never generic HTTP', () => {
-  assert.equal(ok('iam', 'POST', '/api/v1/auth/login').operation.public, true);
+test('C05/C06: session controls are excluded from the generic HTTP capability', () => {
+  assert.equal(
+    ok('iam', 'POST', '/api/v1/auth/login').error,
+    'INVALID_REQUEST',
+  );
   assert.equal(
     ok('clinical', 'POST', '/api/v1/auth/login').error,
     'INVALID_REQUEST',
@@ -73,7 +76,11 @@ test('C02/C06: the per-mount capability uses the catalogue, the mount signal and
   const controller = new AbortController();
   const http = createHttpCapability(client, 'iam', controller.signal);
   assert.ok(Object.isFrozen(http));
-  await http.request({ method: 'POST', path: '/api/v1/auth/login', body: {} });
+  await http.request({
+    method: 'POST',
+    path: '/api/v1/auth/password-recovery-requests',
+    body: {},
+  });
   assert.equal(sent[0].public, true);
   assert.ok(sent[0].signal instanceof AbortSignal);
   const denied = await http.request({ method: 'GET', path: '/api/v1/nowhere' });

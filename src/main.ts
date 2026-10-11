@@ -9,7 +9,7 @@ import {
   type AuthPort,
 } from './core/session/session.ts';
 import { createHttpCapability } from './core/http/capability.ts';
-import { createHttpClient } from './core/http/client.ts';
+import { createHttpClient, type HttpClientDeps } from './core/http/client.ts';
 import { createTelemetry } from './core/telemetry/telemetry.ts';
 import { renderFrame } from './layout/frame.ts';
 import { orderNavigation } from './layout/navigation.ts';
@@ -17,19 +17,22 @@ import { renderServiceError, renderUpdateBanner } from './layout/pages.ts';
 import { renderPublicFrame } from './layout/publicFrame.ts';
 
 const NO_USER = { id: '', name: '', roles: [], permissions: [] };
+type PreviewAuthPort = AuthPort & { demoFetch?: HttpClientDeps['fetch'] };
 
 /** Until the Auth adapter exists, a deployment without the dev double is unavailable. */
-const unavailableAuth: AuthPort = {
+const unavailableAuth: PreviewAuthPort = {
   restore: () => Promise.reject(new Error('AUTH_NOT_CONFIGURED')),
   complete: () => Promise.reject(new Error('AUTH_NOT_CONFIGURED')),
   logout: () => Promise.resolve(),
 };
 
 /** The development Auth double is served only by the local preview (fixtures/). */
-async function loadAuthPort(): Promise<AuthPort> {
+async function loadAuthPort(): Promise<PreviewAuthPort> {
   try {
     const url = '/dev-auth.js';
-    const module = (await import(url)) as { createAuthPort: () => AuthPort };
+    const module = (await import(url)) as {
+      createAuthPort: () => PreviewAuthPort;
+    };
     return module.createAuthPort();
   } catch {
     return unavailableAuth;
@@ -93,7 +96,7 @@ async function boot() {
     sink: (event) => console.info('dlc-front', event),
   });
   const transport = createHttpClient({
-    fetch: (url, init) => fetch(url, init),
+    fetch: (url, init) => auth.demoFetch?.(url, init) ?? fetch(url, init),
     // The Auth adapter holds the access token privately; portals never see it (C05).
     accessToken: () =>
       session.getSnapshot().state === 'authenticated'

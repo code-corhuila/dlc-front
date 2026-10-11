@@ -26,7 +26,7 @@ own routes; an id or path claimed by two portals disables both.
 
 | Portal | Owned global routes |
 | --- | --- |
-| `iam` | `/login`, `/recover-password`, `/app/administration/**` |
+| `iam` | `/login`, `/recover-password`, `/app/administration/**`, `/app/sessions/**` |
 | `patient` | `/app/patients/**` (except `/app/patients/{uuid}`, alias of Clinical) |
 | `appointments` | `/app/appointments/**` |
 | `billing` | `/app/billing/**` (including `/app/billing/procedures`) |
@@ -55,7 +55,7 @@ own routes; an id or path claimed by two portals disables both.
 | `session.getSnapshot()` / `subscribe()` | `{ state, revision, user: { id, name, roles }, permissions, expiresAt, reason }`; show private data only when `state === 'authenticated'` |
 | `reportFailure({ code })` | `PORTAL_RENDER_FAILED` or `PORTAL_TASK_FAILED` only; the shell ends your mount and shows the local notice |
 | `iamSession` | IAM only: `complete`, `logout`, `retryRestore` |
-| `http` | Coming (C06): the only API transport. Never call `fetch`, `axios` or `XMLHttpRequest` against `/api` (norm 5.4.1, serious fault) |
+| `http` | Shared API transport (C06). Never call `fetch`, `axios` or `XMLHttpRequest` against `/api` (norm 5.4.1, serious fault) |
 
 You never receive tokens or credentials and must not store any (`localStorage`,
 `sessionStorage`, cookies).

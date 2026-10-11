@@ -3,6 +3,7 @@
 import { createServer } from 'node:http';
 import { readFile } from 'node:fs/promises';
 import { extname, join, normalize } from 'node:path';
+import { pathToFileURL } from 'node:url';
 
 const TYPES = {
   '.html': 'text/html; charset=utf-8',
@@ -12,41 +13,69 @@ const TYPES = {
   '.png': 'image/png',
   '.woff2': 'font/woff2',
 };
-const port = Number(process.env.PORT ?? 4180);
-// Same-origin proxy to the Clinical container (C01); demo by default.
-const clinical = process.env.CLINICAL_ORIGIN ?? 'http://localhost:4175';
 
-async function proxy(pathname, response) {
+async function proxy(origin, request, response) {
   try {
-    const upstream = await fetch(clinical + pathname);
+    const upstream = await fetch(origin + request.url, {
+      method: request.method,
+      signal: AbortSignal.timeout(10_000),
+    });
     response.writeHead(upstream.status, {
       'content-type':
         upstream.headers.get('content-type') ?? 'application/octet-stream',
       'cache-control': 'no-store',
     });
-    response.end(Buffer.from(await upstream.arrayBuffer()));
+    response.end(
+      request.method === 'HEAD'
+        ? undefined
+        : Buffer.from(await upstream.arrayBuffer()),
+    );
   } catch {
-    response.writeHead(502).end();
+    response.writeHead(502, { 'cache-control': 'no-store' }).end();
   }
 }
 
-createServer(async (request, response) => {
-  const pathname = new URL(request.url, 'http://x').pathname;
-  if (pathname.startsWith('/portals/clinical/'))
-    return proxy(pathname, response);
-  const path = normalize(pathname);
-  const isAsset = extname(path) !== '';
-  const file = join('dist', isAsset ? path : 'index.html');
-  try {
-    const body = await readFile(join('fixtures', path)).catch(() =>
-      readFile(file),
-    );
-    response.writeHead(200, {
-      'content-type': TYPES[extname(file)] ?? 'application/octet-stream',
-      'cache-control': 'no-store',
-    });
-    response.end(body);
-  } catch {
-    response.writeHead(404).end();
-  }
-}).listen(port, () => console.log(`preview: http://localhost:${port}/`));
+export function createPreviewServer({
+  iamOrigin = process.env.IAM_ORIGIN ?? 'http://127.0.0.1:4202',
+  clinicalOrigin = process.env.CLINICAL_ORIGIN ?? 'http://localhost:4175',
+} = {}) {
+  return createServer(async (request, response) => {
+    if (!['GET', 'HEAD'].includes(request.method)) {
+      return response
+        .writeHead(405, { Allow: 'GET, HEAD', 'cache-control': 'no-store' })
+        .end();
+    }
+    const pathname = new URL(request.url, 'http://x').pathname;
+    if (pathname.startsWith('/portals/iam/')) {
+      return proxy(iamOrigin, request, response);
+    }
+    if (pathname.startsWith('/portals/clinical/')) {
+      return proxy(clinicalOrigin, request, response);
+    }
+    const path = normalize(pathname);
+    const isAsset = extname(path) !== '' || pathname.startsWith('/portals/');
+    const file = join('dist', isAsset ? path : 'index.html');
+    try {
+      const body = await readFile(join('fixtures', path)).catch(() =>
+        readFile(file),
+      );
+      response.writeHead(200, {
+        'content-type': TYPES[extname(file)] ?? 'application/octet-stream',
+        'cache-control': 'no-store',
+      });
+      response.end(request.method === 'HEAD' ? undefined : body);
+    } catch {
+      response.writeHead(404, { 'cache-control': 'no-store' }).end();
+    }
+  });
+}
+
+if (
+  process.argv[1] &&
+  import.meta.url === pathToFileURL(process.argv[1]).href
+) {
+  const port = Number(process.env.PORT ?? 4180);
+  createPreviewServer().listen(port, () =>
+    console.log(`preview: http://localhost:${port}/`),
+  );
+}

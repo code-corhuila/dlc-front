@@ -16,11 +16,9 @@ const TYPES = {
 const port = Number(process.env.PORT ?? 4180);
 
 // Same-origin proxies to portal containers (C01); demo origins by default.
-const clinicalOrigin =
-  process.env.CLINICAL_ORIGIN ?? 'http://localhost:4175';
+const clinicalOrigin = process.env.CLINICAL_ORIGIN ?? 'http://localhost:4175';
 
-const billingOrigin =
-  process.env.BILLING_ORIGIN ?? 'http://localhost:4204';
+const billingOrigin = process.env.BILLING_ORIGIN ?? 'http://localhost:4204';
 
 async function proxy(origin, pathname, response) {
   try {
@@ -28,57 +26,38 @@ async function proxy(origin, pathname, response) {
 
     response.writeHead(upstream.status, {
       'content-type':
-        upstream.headers.get('content-type') ??
-        'application/octet-stream',
+        upstream.headers.get('content-type') ?? 'application/octet-stream',
       'cache-control': 'no-store',
     });
 
-    response.end(
-      Buffer.from(await upstream.arrayBuffer()),
-    );
+    response.end(Buffer.from(await upstream.arrayBuffer()));
   } catch {
     response.writeHead(502).end();
   }
 }
 
 createServer(async (request, response) => {
-  const pathname = new URL(
-    request.url,
-    'http://x',
-  ).pathname;
+  const pathname = new URL(request.url, 'http://x').pathname;
 
   if (pathname.startsWith('/portals/clinical/')) {
-    return proxy(
-      clinicalOrigin,
-      pathname,
-      response,
-    );
+    return proxy(clinicalOrigin, pathname, response);
   }
 
   if (pathname.startsWith('/portals/billing/')) {
-    return proxy(
-      billingOrigin,
-      pathname,
-      response,
-    );
+    return proxy(billingOrigin, pathname, response);
   }
 
   const path = normalize(pathname);
   const isAsset = extname(path) !== '';
-  const file = join(
-    'dist',
-    isAsset ? path : 'index.html',
-  );
+  const file = join('dist', isAsset ? path : 'index.html');
 
   try {
-    const body = await readFile(
-      join('fixtures', path),
-    ).catch(() => readFile(file));
+    const body = await readFile(join('fixtures', path)).catch(() =>
+      readFile(file),
+    );
 
     response.writeHead(200, {
-      'content-type':
-        TYPES[extname(file)] ??
-        'application/octet-stream',
+      'content-type': TYPES[extname(file)] ?? 'application/octet-stream',
       'cache-control': 'no-store',
     });
 
@@ -86,10 +65,4 @@ createServer(async (request, response) => {
   } catch {
     response.writeHead(404).end();
   }
-}).listen(
-  port,
-  () =>
-    console.log(
-      `preview: http://localhost:${port}/`,
-    ),
-);
+}).listen(port, () => console.log(`preview: http://localhost:${port}/`));

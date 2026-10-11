@@ -8,13 +8,7 @@ test('preview configures a same-origin proxy for Billing portal assets', async (
     'utf8',
   );
 
-  assert.match(
-    source,
-    /BILLING_ORIGIN/,
-  );
+  assert.match(source, /BILLING_ORIGIN/);
 
-  assert.match(
-    source,
-    /\/portals\/billing\//,
-  );
+  assert.match(source, /\/portals\/billing\//);
 });

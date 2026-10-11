@@ -184,3 +184,30 @@ test('Appointments deployment registry publishes the demo entry and navigation',
   );
   assert.equal(result.portals.clinical.status, 'available');
 });
+
+test('Billing deployment registry publishes the demo entry and navigation', async () => {
+  const deploymentRegistry = JSON.parse(
+    await readFile(
+      new URL('../../fixtures/portal-registry.json', import.meta.url),
+    ),
+  );
+  const result = parseRegistry(deploymentRegistry);
+
+  assert.equal(result.ok, true);
+
+  const billing = result.portals.billing;
+
+  assert.equal(billing.status, 'available');
+  assert.equal(billing.release, '0.1.0-demo');
+  assert.equal(
+    billing.entryUrl,
+    '/portals/billing/0.1.0-demo/entry.js',
+  );
+  assert.deepEqual(
+    billing.navigation.map(({ id, path }) => ({ id, path })),
+    [
+      { id: 'billing', path: '/app/billing' },
+      { id: 'procedures', path: '/app/billing/procedures' },
+    ],
+  );
+});

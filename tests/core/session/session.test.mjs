@@ -114,12 +114,27 @@ test('C05: completion establishes; failure keeps anonymous; logout clears first'
   assert.equal(failing.getSnapshot().state, 'anonymous');
 });
 
-test('C05: only the two MFA completion operations are accepted', async () => {
-  const session = createSession(auth());
+test('C05: interim password login completes only through the IAM session control', async () => {
+  const port = auth();
+  const session = createSession(port);
   await session.start();
-  const result = await session.complete({ operationId: 'AuthLogin', body: {} });
+  const result = await session.complete({
+    operationId: 'AuthLogin',
+    body: { email: 'staff@example.test', password: 'placeholder' },
+  });
+  assert.equal(result.ok, true);
+  assert.equal(session.getSnapshot().state, 'authenticated');
+  assert.ok(port.calls.includes('complete:AuthLogin'));
+});
+
+test('C05: unknown completion never reaches Auth', async () => {
+  const port = auth();
+  const session = createSession(port);
+  await session.start();
+  const result = await session.complete({ operationId: 'Other', body: {} });
   assert.deepEqual(result.ok, false);
   assert.equal(result.error, 'INVALID_REQUEST');
+  assert.deepEqual(port.calls, ['restore']);
 });
 
 test('C05: logout outage is reported as unconfirmed, never as revoked', async () => {

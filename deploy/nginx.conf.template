@@ -24,6 +24,14 @@ server {
     add_header Cache-Control "no-store" always;
   }
 
+  # Same-origin proxy to the Patients container (C01).
+  location ^~ /portals/patient/ {
+    set $patient ${PATIENT_UPSTREAM};
+    proxy_pass $patient$request_uri;
+    proxy_hide_header Cache-Control;
+    add_header Cache-Control "no-store" always;
+  }
+
   # Same-origin proxy to the Clinical container (C01).
   location ^~ /portals/clinical/ {
     set $clinical ${CLINICAL_UPSTREAM};

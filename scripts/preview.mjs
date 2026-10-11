@@ -3,6 +3,9 @@
 import { createServer } from 'node:http';
 import { readFile } from 'node:fs/promises';
 import { extname, join, normalize } from 'node:path';
+import { pathToFileURL } from 'node:url';
+
+const PROXY_TIMEOUT_MS = 10_000;
 
 const TYPES = {
   '.html': 'text/html; charset=utf-8',
@@ -13,16 +16,12 @@ const TYPES = {
   '.woff2': 'font/woff2',
 };
 
-const port = Number(process.env.PORT ?? 4180);
-
-// Same-origin proxies to portal containers (C01); demo origins by default.
-const clinicalOrigin = process.env.CLINICAL_ORIGIN ?? 'http://localhost:4175';
-
-const billingOrigin = process.env.BILLING_ORIGIN ?? 'http://localhost:4204';
-
-async function proxy(origin, pathname, response) {
+async function proxy(origin, path, method, response) {
   try {
-    const upstream = await fetch(origin + pathname);
+    const upstream = await fetch(origin + path, {
+      method,
+      signal: AbortSignal.timeout(PROXY_TIMEOUT_MS),
+    });
 
     response.writeHead(upstream.status, {
       'content-type':
@@ -30,39 +29,66 @@ async function proxy(origin, pathname, response) {
       'cache-control': 'no-store',
     });
 
-    response.end(Buffer.from(await upstream.arrayBuffer()));
+    response.end(
+      method === 'HEAD' ? undefined : Buffer.from(await upstream.arrayBuffer()),
+    );
   } catch {
-    response.writeHead(502).end();
+    response.writeHead(502, { 'cache-control': 'no-store' }).end();
   }
 }
 
-createServer(async (request, response) => {
-  const pathname = new URL(request.url, 'http://x').pathname;
+export function createPreviewServer({
+  patientOrigin = process.env.PATIENT_ORIGIN ?? 'http://127.0.0.1:4177',
+  clinicalOrigin = process.env.CLINICAL_ORIGIN ?? 'http://localhost:4175',
+  billingOrigin = process.env.BILLING_ORIGIN ?? 'http://localhost:4204',
+} = {}) {
+  return createServer(async (request, response) => {
+    if (!['GET', 'HEAD'].includes(request.method)) {
+      return response
+        .writeHead(405, { Allow: 'GET, HEAD', 'cache-control': 'no-store' })
+        .end();
+    }
+    const pathname = new URL(request.url, 'http://x').pathname;
 
-  if (pathname.startsWith('/portals/clinical/')) {
-    return proxy(clinicalOrigin, pathname, response);
-  }
+    if (pathname.startsWith('/portals/patient/')) {
+      return proxy(patientOrigin, request.url, request.method, response);
+    }
 
-  if (pathname.startsWith('/portals/billing/')) {
-    return proxy(billingOrigin, pathname, response);
-  }
+    if (pathname.startsWith('/portals/clinical/')) {
+      return proxy(clinicalOrigin, request.url, request.method, response);
+    }
 
-  const path = normalize(pathname);
-  const isAsset = extname(path) !== '';
-  const file = join('dist', isAsset ? path : 'index.html');
+    if (pathname.startsWith('/portals/billing/')) {
+      return proxy(billingOrigin, request.url, request.method, response);
+    }
 
-  try {
-    const body = await readFile(join('fixtures', path)).catch(() =>
-      readFile(file),
-    );
+    const path = normalize(pathname);
+    const isAsset = extname(path) !== '' || pathname.startsWith('/portals/');
+    const file = join('dist', isAsset ? path : 'index.html');
 
-    response.writeHead(200, {
-      'content-type': TYPES[extname(file)] ?? 'application/octet-stream',
-      'cache-control': 'no-store',
-    });
+    try {
+      const body = await readFile(join('fixtures', path)).catch(() =>
+        readFile(file),
+      );
 
-    response.end(body);
-  } catch {
-    response.writeHead(404).end();
-  }
-}).listen(port, () => console.log(`preview: http://localhost:${port}/`));
+      response.writeHead(200, {
+        'content-type': TYPES[extname(file)] ?? 'application/octet-stream',
+        'cache-control': 'no-store',
+      });
+
+      response.end(request.method === 'HEAD' ? undefined : body);
+    } catch {
+      response.writeHead(404, { 'cache-control': 'no-store' }).end();
+    }
+  });
+}
+
+if (
+  process.argv[1] &&
+  import.meta.url === pathToFileURL(process.argv[1]).href
+) {
+  const port = Number(process.env.PORT ?? 4180);
+  createPreviewServer().listen(port, () =>
+    console.log(`preview: http://localhost:${port}/`),
+  );
+}

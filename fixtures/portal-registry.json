@@ -1,6 +1,6 @@
 {
   "contractVersion": 1,
-  "registryRevision": "local-preview-appointments-demo",
+  "registryRevision": "local-preview-billing-demo",
   "portals": [
     {
       "portalId": "iam",
@@ -65,8 +65,8 @@
     {
       "portalId": "billing",
       "repository": "dlc-billing-portal",
-      "release": "0.0.0-pending",
-      "entryUrl": "/portals/billing/0.0.0-pending/entry.js",
+      "release": "0.1.0-demo",
+      "entryUrl": "/portals/billing/0.1.0-demo/entry.js",
       "navigation": [
         {
           "id": "billing",

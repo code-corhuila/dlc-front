@@ -109,6 +109,7 @@ const ORDER = [
   'availability',
   'clinical',
   'billing',
+  'sessions',
   'administration',
 ];
 

@@ -1,5 +1,4 @@
-# Front-only demo: the compositor plus the Clinical containers started from dlc-clinical-portal
-# (docker compose -f deploy/compose.yml up --build -d in that repository).
+# Front-only demo: the compositor plus the portal containers started from their repositories.
 name: dlc-front
 
 services:
@@ -11,6 +10,7 @@ services:
     environment:
       CLINICAL_UPSTREAM: ${CLINICAL_UPSTREAM:-http://clinical-portal-demo}
       APPOINTMENTS_UPSTREAM: ${APPOINTMENTS_UPSTREAM:-http://appointments-portal-demo}
+      BILLING_UPSTREAM: ${BILLING_UPSTREAM:-http://billing-portal-demo}
       # Base that replaces /api/v1: the mock serves paths at its root; a real Gateway keeps /api/v1.
       GATEWAY_UPSTREAM: ${GATEWAY_UPSTREAM:-http://mock-gateway:4010}
     restart: unless-stopped
@@ -29,6 +29,7 @@ services:
       - default
       - clinical
       - appointments
+      - billing
 
   # Demo-only Gateway mock generated from the dlc-docs OpenAPI contracts (read-only mount,
   # nothing is copied). Start with: docker compose -f deploy/compose.yml --profile mock up -d
@@ -47,7 +48,13 @@ networks:
   clinical:
     external: true
     name: ${CLINICAL_NETWORK:-dlc-clinical-portal_default}
+
   # Created by dlc-appointments-portal's compose.
   appointments:
     external: true
     name: ${APPOINTMENTS_NETWORK:-dlc-front}
+
+  # Created by dlc-billing-portal's compose.
+  billing:
+    external: true
+    name: ${BILLING_NETWORK:-dlc-billing-portal_default}

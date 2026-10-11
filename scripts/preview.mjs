@@ -5,6 +5,8 @@ import { readFile } from 'node:fs/promises';
 import { extname, join, normalize } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
+const PROXY_TIMEOUT_MS = 10_000;
+
 const TYPES = {
   '.html': 'text/html; charset=utf-8',
   '.js': 'text/javascript',
@@ -18,7 +20,7 @@ async function proxy(origin, path, method, response) {
   try {
     const upstream = await fetch(origin + path, {
       method,
-      signal: AbortSignal.timeout(10_000),
+      signal: AbortSignal.timeout(PROXY_TIMEOUT_MS),
     });
 
     response.writeHead(upstream.status, {

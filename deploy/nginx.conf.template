@@ -32,6 +32,14 @@ server {
     add_header Cache-Control "no-store" always;
   }
 
+  # Same-origin proxy to the Appointments container (C01).
+  location ^~ /portals/appointments/ {
+    set $appointments ${APPOINTMENTS_UPSTREAM};
+    proxy_pass $appointments$request_uri;
+    proxy_hide_header Cache-Control;
+    add_header Cache-Control "no-store" always;
+  }
+
   # Deployment data mounted at /usr/share/nginx/deployment (demo: fixtures/).
   location = /portal-registry.json {
     root /usr/share/nginx/deployment;

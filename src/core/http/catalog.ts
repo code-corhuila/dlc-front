@@ -5,8 +5,9 @@ export type Authorization =
   | Readonly<{ ok: true; operation: Operation }>
   | Readonly<{ ok: false; error: 'INVALID_REQUEST' }>;
 
-// C05: cookie-changing and MFA-completion operations go through session controls only.
+// C05: login, cookie-changing and MFA-completion operations use session controls.
 const CONTROLLED = new Set([
+  'AuthLogin',
   'AuthRotaterefreshtoken',
   'AuthLogout',
   'AuthVerifyMFAchallenge',

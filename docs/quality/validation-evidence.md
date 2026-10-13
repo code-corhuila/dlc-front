@@ -896,3 +896,14 @@ width; the mockup chip itself overflows the 1280 px page edge.
 - **Limitation:** browser and same-origin proxy checks at `:8080` were not run: the external
   Clinical network required by the existing front Compose file is absent locally. No container
   was started or stopped to work around it.
+
+## DEV-FRONT-NAV-ICON-001
+
+- **Change:** the IAM `Mis sesiones` sidebar entry (`sessions`) rendered without an icon. A
+  stroked "signed-in devices" glyph (monitor and phone), matching the outline style of the other
+  sidebar icons, is added to `src/layout/icons.ts`.
+- **TDD:** a new test asserts that every navigation id in the demo registry has an icon; it failed
+  first listing `sessions` and passes after the change.
+- **Validation:** typecheck, lint, format check, tests (148), coverage and build pass.
+- **Browser check (`:8080`, rebuilt image, demo admin):** the sidebar shows the new icon next to
+  `Mis sesiones`, aligned and colored like `Facturación` and `Gestión de usuarios`.

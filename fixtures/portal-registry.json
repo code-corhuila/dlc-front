@@ -31,8 +31,8 @@
     {
       "portalId": "patient",
       "repository": "dlc-patient-portal",
-      "release": "0.0.0-pending",
-      "entryUrl": "/portals/patient/0.0.0-pending/entry.js",
+      "release": "0.1.0-demo",
+      "entryUrl": "/portals/patient/0.1.0-demo/entry.js",
       "navigation": [
         {
           "id": "patients",
@@ -48,8 +48,8 @@
     {
       "portalId": "appointments",
       "repository": "dlc-appointments-portal",
-      "release": "0.0.0-missing",
-      "entryUrl": "/portals/appointments/0.0.0-missing/entry.js",
+      "release": "0.1.0-demo",
+      "entryUrl": "/portals/appointments/0.1.0-demo/entry.js",
       "navigation": [
         {
           "id": "appointments",
@@ -74,8 +74,8 @@
     {
       "portalId": "billing",
       "repository": "dlc-billing-portal",
-      "release": "0.0.0-pending",
-      "entryUrl": "/portals/billing/0.0.0-pending/entry.js",
+      "release": "2.0.0",
+      "entryUrl": "/portals/billing/2.0.0/entry.js",
       "navigation": [
         {
           "id": "billing",

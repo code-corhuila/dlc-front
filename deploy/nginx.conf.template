@@ -32,10 +32,34 @@ server {
     add_header Cache-Control "no-store" always;
   }
 
+  # Same-origin proxy to the Patients container (C01).
+  location ^~ /portals/patient/ {
+    set $patient ${PATIENT_UPSTREAM};
+    proxy_pass $patient$request_uri;
+    proxy_hide_header Cache-Control;
+    add_header Cache-Control "no-store" always;
+  }
+
   # Same-origin proxy to the Clinical container (C01).
   location ^~ /portals/clinical/ {
     set $clinical ${CLINICAL_UPSTREAM};
     proxy_pass $clinical$request_uri;
+    proxy_hide_header Cache-Control;
+    add_header Cache-Control "no-store" always;
+  }
+
+  # Same-origin proxy to the Appointments container (C01).
+  location ^~ /portals/appointments/ {
+    set $appointments ${APPOINTMENTS_UPSTREAM};
+    proxy_pass $appointments$request_uri;
+    proxy_hide_header Cache-Control;
+    add_header Cache-Control "no-store" always;
+  }
+
+  # Same-origin proxy to the Billing container (C01).
+  location ^~ /portals/billing/ {
+    set $billing ${BILLING_UPSTREAM};
+    proxy_pass $billing$request_uri;
     proxy_hide_header Cache-Control;
     add_header Cache-Control "no-store" always;
   }
@@ -46,16 +70,19 @@ server {
     add_header Cache-Control "no-store" always;
     try_files $uri =404;
   }
+
   location = /dev-session.json {
     root /usr/share/nginx/deployment;
     add_header Cache-Control "no-store" always;
     try_files $uri =404;
   }
+
   location = /dev-auth.js {
     root /usr/share/nginx/deployment;
     add_header Cache-Control "no-store" always;
     try_files $uri =404;
   }
+
   location ^~ /portals/ {
     root /usr/share/nginx/deployment;
     add_header Cache-Control "no-store" always;

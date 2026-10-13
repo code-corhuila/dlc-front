@@ -30,12 +30,19 @@ test('C01/C04: register Patients and preserve administrative routes and the Clin
   assert.equal(patient.release, '0.1.0-demo');
   assert.equal(patient.entryUrl, '/portals/patient/0.1.0-demo/entry.js');
   assert.equal(patient.navigation[0].path, '/app/patients');
-  for (const portalId of ['clinical', 'appointments', 'billing']) {
+
+  for (const portalId of ['clinical', 'appointments']) {
     assert.equal(
       registry.portals.find((portal) => portal.portalId === portalId).release,
       '0.1.0-demo',
     );
   }
+
+  assert.equal(
+    registry.portals.find((portal) => portal.portalId === 'billing').release,
+    '2.0.0',
+  );
+
   const id = '550e8400-e29b-41d4-a716-446655440001';
   for (const path of [
     '/app/patients',
@@ -81,7 +88,7 @@ test('C01: preview serves owner assets, HEAD and real errors while preserving Cl
     entry + '?probe=1',
     '/portals/patient/0.1.0-demo/chunk.js',
     '/portals/clinical/0.1.0-demo/entry.js',
-    '/portals/billing/0.1.0-demo/entry.js',
+    '/portals/billing/2.0.0/entry.js',
   ]) {
     const response = await fetch(origin + path);
     assert.equal(response.status, 200);

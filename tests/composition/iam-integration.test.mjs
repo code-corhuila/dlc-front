@@ -46,10 +46,14 @@ test('IAM release and own-sessions navigation are valid alongside the other port
     });
     assert.ok(items.some((item) => item.id === 'sessions'));
   }
-  for (const id of ['patient', 'appointments', 'billing', 'clinical']) {
+
+  for (const id of ['patient', 'appointments', 'clinical']) {
     assert.equal(registry.portals[id].status, 'available');
     assert.equal(registry.portals[id].release, '0.1.0-demo');
   }
+
+  assert.equal(registry.portals.billing.status, 'available');
+  assert.equal(registry.portals.billing.release, '2.0.0');
 });
 
 test('IAM preview proxy preserves its release path, no-store and missing-asset status', async (t) => {

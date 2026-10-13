@@ -74,8 +74,8 @@
     {
       "portalId": "billing",
       "repository": "dlc-billing-portal",
-      "release": "0.1.0-demo",
-      "entryUrl": "/portals/billing/0.1.0-demo/entry.js",
+      "release": "2.0.0",
+      "entryUrl": "/portals/billing/2.0.0/entry.js",
       "navigation": [
         {
           "id": "billing",

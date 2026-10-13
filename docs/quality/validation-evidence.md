@@ -881,3 +881,14 @@ width; the mockup chip itself overflows the 1280 px page edge.
   `/app/clinical/patient-b` with the item active; Back → `/app/clinical`.
 - **Branch naming answer from the professor:** `hu-x-dev → develop` / `hu-x-qa → qa` refers to
   the flow, not to branch names; the norm 6.3 prefixes in use comply.
+
+## DEV-FRONT-NAV-ICON-001
+
+- **Change:** the IAM `Mis sesiones` sidebar entry (`sessions`) rendered without an icon. A
+  stroked "signed-in devices" glyph (monitor and phone), matching the outline style of the other
+  sidebar icons, is added to `src/layout/icons.ts`.
+- **TDD:** a new test asserts that every navigation id in the demo registry has an icon; it failed
+  first listing `sessions` and passes after the change.
+- **Validation:** typecheck, lint, format check, tests (148), coverage and build pass.
+- **Browser check (`:8080`, rebuilt image, demo admin):** the sidebar shows the new icon next to
+  `Mis sesiones`, aligned and colored like `Facturación` and `Gestión de usuarios`.

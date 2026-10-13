@@ -5,6 +5,8 @@ import { readFile } from 'node:fs/promises';
 import { extname, join, normalize } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
+const PROXY_TIMEOUT_MS = 10_000;
+
 const TYPES = {
   '.html': 'text/html; charset=utf-8',
   '.js': 'text/javascript',
@@ -14,21 +16,21 @@ const TYPES = {
   '.woff2': 'font/woff2',
 };
 
-async function proxy(origin, request, response) {
+async function proxy(origin, path, method, response) {
   try {
-    const upstream = await fetch(origin + request.url, {
-      method: request.method,
-      signal: AbortSignal.timeout(10_000),
+    const upstream = await fetch(origin + path, {
+      method,
+      signal: AbortSignal.timeout(PROXY_TIMEOUT_MS),
     });
+
     response.writeHead(upstream.status, {
       'content-type':
         upstream.headers.get('content-type') ?? 'application/octet-stream',
       'cache-control': 'no-store',
     });
+
     response.end(
-      request.method === 'HEAD'
-        ? undefined
-        : Buffer.from(await upstream.arrayBuffer()),
+      method === 'HEAD' ? undefined : Buffer.from(await upstream.arrayBuffer()),
     );
   } catch {
     response.writeHead(502, { 'cache-control': 'no-store' }).end();
@@ -37,7 +39,9 @@ async function proxy(origin, request, response) {
 
 export function createPreviewServer({
   iamOrigin = process.env.IAM_ORIGIN ?? 'http://127.0.0.1:4202',
+  patientOrigin = process.env.PATIENT_ORIGIN ?? 'http://127.0.0.1:4177',
   clinicalOrigin = process.env.CLINICAL_ORIGIN ?? 'http://localhost:4175',
+  billingOrigin = process.env.BILLING_ORIGIN ?? 'http://localhost:4204',
 } = {}) {
   return createServer(async (request, response) => {
     if (!['GET', 'HEAD'].includes(request.method)) {
@@ -46,23 +50,37 @@ export function createPreviewServer({
         .end();
     }
     const pathname = new URL(request.url, 'http://x').pathname;
+
     if (pathname.startsWith('/portals/iam/')) {
-      return proxy(iamOrigin, request, response);
+      return proxy(iamOrigin, request.url, request.method, response);
     }
+
+    if (pathname.startsWith('/portals/patient/')) {
+      return proxy(patientOrigin, request.url, request.method, response);
+    }
+
     if (pathname.startsWith('/portals/clinical/')) {
-      return proxy(clinicalOrigin, request, response);
+      return proxy(clinicalOrigin, request.url, request.method, response);
     }
+
+    if (pathname.startsWith('/portals/billing/')) {
+      return proxy(billingOrigin, request.url, request.method, response);
+    }
+
     const path = normalize(pathname);
     const isAsset = extname(path) !== '' || pathname.startsWith('/portals/');
     const file = join('dist', isAsset ? path : 'index.html');
+
     try {
       const body = await readFile(join('fixtures', path)).catch(() =>
         readFile(file),
       );
+
       response.writeHead(200, {
         'content-type': TYPES[extname(file)] ?? 'application/octet-stream',
         'cache-control': 'no-store',
       });
+
       response.end(request.method === 'HEAD' ? undefined : body);
     } catch {
       response.writeHead(404, { 'cache-control': 'no-store' }).end();

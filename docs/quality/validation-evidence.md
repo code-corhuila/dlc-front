@@ -882,6 +882,21 @@ width; the mockup chip itself overflows the 1280 px page edge.
 - **Branch naming answer from the professor:** `hu-x-dev → develop` / `hu-x-qa → qa` refers to
   the flow, not to branch names; the norm 6.3 prefixes in use comply.
 
+## DEV-FRONT-APPOINTMENTS-001
+
+- **Change:** the deployment registry publishes Appointments `0.1.0-demo` at
+  `/portals/appointments/0.1.0-demo/entry.js`, preserving the `Citas` and `Horarios y Slots`
+  descriptors. Nginx proxies `/portals/appointments/` through the Docker service name on the
+  external `dlc-front` network; Compose and `.env.example` declare its upstream and network.
+- **TDD:** the registry test failed first with `0.0.0-missing`; after the change it verifies the
+  published release, entry URL, both navigation paths and that Clinical remains available.
+- **Validation:** `docker compose config` and an Nginx template render with `nginx -t` pass;
+  the running Appointments service answers `entry.js` and `entry.css` on `:4177` with `200` and
+  `Cache-Control: no-store`. Typecheck, lint, format check, tests (137), coverage and build pass.
+- **Limitation:** browser and same-origin proxy checks at `:8080` were not run: the external
+  Clinical network required by the existing front Compose file is absent locally. No container
+  was started or stopped to work around it.
+
 ## DEV-FRONT-NAV-ICON-001
 
 - **Change:** the IAM `Mis sesiones` sidebar entry (`sessions`) rendered without an icon. A

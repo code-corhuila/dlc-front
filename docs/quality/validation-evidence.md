@@ -907,3 +907,12 @@ width; the mockup chip itself overflows the 1280 px page edge.
 - **Validation:** typecheck, lint, format check, tests (148), coverage and build pass.
 - **Browser check (`:8080`, rebuilt image, demo admin):** the sidebar shows the new icon next to
   `Mis sesiones`, aligned and colored like `Facturación` and `Gestión de usuarios`.
+
+## DEV-FRONT-CHANGELOG-001
+
+- **Change:** `CHANGELOG.md` at the repository root (Keep a Changelog 1.1.0, Semantic Versioning)
+  for the MVP 2 delivery. Everything stays under `[Unreleased]` until `release/2.0.0` turns it
+  into `[2.0.0]`.
+- **Sources:** merged PRs on `develop`, `git log`, `fixtures/portal-registry.json`,
+  `deploy/` and the lifecycle and HTTP deadlines in `src/`. Every item links to its PR.
+- **Validation:** documentation only; no source, test or gate changed.

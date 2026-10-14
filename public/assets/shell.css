@@ -1,0 +1,671 @@
+/* Common frame (mockup p. 4). Values measured on the mockup; shell-only selectors. */
+@font-face {
+  font-family: Inter;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url('/assets/fonts/inter-latin-wght-normal.woff2') format('woff2');
+}
+
+:root {
+  --dlc-teal: #1ea296;
+  --dlc-teal-strong: #20a99a;
+  --dlc-active-bg: #e4ebf8;
+  --dlc-sidebar-bg: #f2f4f6;
+  --dlc-page-bg: #f7f9fb;
+  --dlc-line: #c2c6d4;
+  --dlc-text: #1f2933;
+  --dlc-text-nav: #424752;
+  --dlc-text-muted: #94a3b8;
+  --dlc-focus: #1554a3;
+  --dlc-font: Inter, system-ui, sans-serif;
+}
+
+html,
+body {
+  margin: 0;
+  height: 100%;
+}
+
+.dlc-shell {
+  display: flex;
+  min-height: 100vh;
+  font-family: var(--dlc-font);
+  color: var(--dlc-text);
+  background: var(--dlc-page-bg);
+}
+
+.dlc-sidebar {
+  position: sticky;
+  top: 0;
+  display: flex;
+  flex-direction: column;
+  flex: 0 0 256px;
+  width: 256px;
+  height: 100vh;
+  box-sizing: border-box;
+  overflow-y: auto;
+  background: var(--dlc-sidebar-bg);
+  border-right: 1px solid var(--dlc-line);
+}
+
+.dlc-logo {
+  display: block;
+  width: 158px;
+  margin: 56px 0 27px 36px;
+}
+
+.dlc-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding: 0 12px 0 12px;
+}
+
+.dlc-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  height: 44px;
+  padding: 0 10px;
+  border-radius: 6px 0 0 6px;
+  color: var(--dlc-text-nav);
+  font-size: 15px;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.dlc-nav-item:hover {
+  background: #e9edf2;
+}
+
+.dlc-nav-item[aria-current='page'] {
+  background: var(--dlc-active-bg);
+  box-shadow: inset -4px 0 0 var(--dlc-teal);
+  color: var(--dlc-teal);
+}
+
+.dlc-icon {
+  width: 22px;
+  height: 22px;
+  flex: none;
+}
+
+.dlc-sidebar-user {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: auto;
+  padding: 36px 24px 37px;
+  border-top: 1px solid var(--dlc-line);
+}
+
+.dlc-avatar {
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  border-radius: 50%;
+  font-weight: 700;
+}
+
+.dlc-sidebar-user .dlc-avatar {
+  width: 36px;
+  height: 36px;
+  background: #ccfbf1;
+  color: #115e59;
+  font-size: 12px;
+}
+
+.dlc-sidebar-who {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1;
+}
+
+.dlc-name {
+  overflow: hidden;
+  font-size: 13px;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dlc-role {
+  padding-left: 6px;
+  color: var(--dlc-text-muted);
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.dlc-logout {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  background: none;
+  color: #abb7c8;
+  cursor: pointer;
+}
+
+.dlc-logout:hover {
+  color: #d64545;
+}
+
+.dlc-logout .dlc-icon {
+  width: 18px;
+  height: 18px;
+}
+
+.dlc-column {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+}
+
+.dlc-topbar {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  background: var(--dlc-page-bg);
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 24px;
+  height: 63px;
+  padding: 0 24px;
+  box-sizing: border-box;
+  border-bottom: 1px solid var(--dlc-line);
+}
+
+.dlc-search {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 0 1 372px;
+  min-width: 0;
+  height: 38px;
+  padding: 0 12px;
+  box-sizing: border-box;
+  border: 1px solid var(--dlc-line);
+  border-radius: 8px;
+  background: #f6f6f6;
+  color: #424752;
+}
+
+.dlc-search-input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  background: none;
+  font: 15px var(--dlc-font);
+}
+
+.dlc-search-input:disabled {
+  cursor: not-allowed;
+}
+
+.dlc-user-chip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 38px;
+  padding: 0 14px 0 12px;
+  border: 1px solid #e5e7eb;
+  border-radius: 19px;
+  background: #fff;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.dlc-user-chip .dlc-avatar {
+  width: 24px;
+  height: 24px;
+  background: var(--dlc-teal-strong);
+  color: #fff;
+  font-size: 11px;
+}
+
+.dlc-user-chip .dlc-icon {
+  width: 16px;
+  height: 16px;
+  color: #94a3b8;
+}
+
+.dlc-main {
+  flex: 1;
+  padding: 24px;
+}
+
+:focus-visible {
+  outline: 2px solid var(--dlc-focus);
+  outline-offset: 2px;
+}
+
+/* Shell pages: dashboard frame, 404 and PORTAL_UNAVAILABLE (mockup p. 4 card style). */
+.dlc-page-title {
+  margin: 20px 0 8px;
+  font-size: 32px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.dlc-page-title:focus {
+  outline: none;
+}
+
+.dlc-page-subtitle {
+  margin: 0 0 32px;
+  color: var(--dlc-text-nav);
+  font-size: 16px;
+}
+
+.dlc-shortcuts {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 24px;
+  margin-bottom: 48px;
+}
+
+.dlc-shortcut,
+.dlc-state {
+  border: 1px solid #d6dee2;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.dlc-shortcut {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 24px;
+  color: var(--dlc-text);
+  font-size: 15px;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.dlc-shortcut .dlc-icon {
+  padding: 8px;
+  border-radius: 8px;
+  background: var(--dlc-active-bg);
+  color: var(--dlc-teal);
+}
+
+.dlc-shortcut:hover {
+  border-color: var(--dlc-teal);
+}
+
+.dlc-state {
+  max-width: 560px;
+  padding: 32px;
+}
+
+.dlc-state-title {
+  margin: 0 0 8px;
+  font-size: 18px;
+}
+
+.dlc-button {
+  display: inline-flex;
+  align-items: center;
+  height: 40px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: 8px;
+  background: var(--dlc-teal-strong);
+  color: #fff;
+  font: 600 14px var(--dlc-font);
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.dlc-button:hover {
+  background: #168e82;
+}
+
+/* Public brand frame around IAM Login/Recovery (mockup pp. 1-3, measured at 1280 px). */
+.dlc-public {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  font-family: var(--dlc-font);
+  color: var(--dlc-text);
+  background: #fff;
+}
+
+.dlc-public-header {
+  display: flex;
+  align-items: center;
+  height: 63px;
+  padding: 0 33px 0 38px;
+  box-sizing: border-box;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.dlc-public-brand {
+  display: flex;
+  align-items: center;
+  gap: 30px;
+}
+
+.dlc-public-mark {
+  width: 56px;
+  height: 56px;
+}
+
+.dlc-brand-word {
+  color: var(--dlc-teal);
+  font-size: 17px;
+  font-weight: 800;
+  letter-spacing: 0.3px;
+  white-space: nowrap;
+}
+
+.dlc-brand-di {
+  color: #0f5e5a;
+}
+
+.dlc-public-nav {
+  display: flex;
+  gap: 52px;
+  margin-left: 32px;
+}
+
+.dlc-public-link {
+  color: #134e4a;
+  font-size: 15px;
+  font-weight: 500;
+  cursor: default;
+}
+
+.dlc-public-login {
+  display: inline-flex;
+  align-items: center;
+  height: 35px;
+  margin-left: auto;
+  padding: 0 15px;
+  border-radius: 6px;
+  background: var(--dlc-teal);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.dlc-public-main {
+  display: flex;
+  flex: 1;
+}
+
+.dlc-public-host {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+}
+
+.dlc-public-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 93px;
+  padding: 0 38px;
+  box-sizing: border-box;
+  border-top: 1px solid #e5e7eb;
+  font-size: 14px;
+}
+
+.dlc-public-copy {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+}
+
+.dlc-public-copy .dlc-brand-word {
+  font-size: 16px;
+}
+
+.dlc-public-legal {
+  display: flex;
+  gap: 22px;
+}
+
+.dlc-public-legal .dlc-public-link {
+  font-size: 13px;
+}
+
+/* Mockup p. 4: Clinical Analytics owns the visible dashboard header when it is active. */
+.dlc-dashboard[data-analytics='active'] > .dlc-page-title,
+.dlc-dashboard[data-analytics='active'] > .dlc-page-subtitle {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.dlc-analytics-host + .dlc-shortcuts {
+  margin-top: 32px;
+}
+
+/* Service error cards inside the public frame keep the 404 card look, centred. */
+.dlc-public-host > .dlc-state {
+  margin: 64px auto;
+}
+
+/* Public Home (mockup p. 1): full-width hero at the artwork's own ratio, footer right below. */
+.dlc-home {
+  width: 100%;
+  aspect-ratio: 1802 / 872;
+  background: #f4f8fb url('/assets/home-hero.jpg') center / cover no-repeat;
+}
+
+.dlc-public:has(.dlc-home) .dlc-public-main {
+  flex: none;
+}
+
+.dlc-public-host:has(> .dlc-home) {
+  display: block;
+}
+
+a.dlc-public-brand {
+  text-decoration: none;
+}
+
+a.dlc-public-link {
+  text-decoration: none;
+  cursor: pointer;
+}
+
+a.dlc-public-link:hover {
+  color: var(--dlc-teal);
+}
+
+.dlc-visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* Fit smaller screens: the 1280×917 mockup measures are kept above these breakpoints. */
+@media (max-height: 760px) {
+  .dlc-logo {
+    width: 116px;
+    margin: 20px 0 14px 36px;
+  }
+
+  .dlc-nav-item {
+    height: 40px;
+  }
+
+  .dlc-sidebar-user {
+    padding: 14px 24px;
+  }
+}
+
+@media (max-width: 960px) {
+  .dlc-sidebar {
+    flex-basis: 72px;
+    width: 72px;
+  }
+
+  .dlc-logo,
+  .dlc-nav-item span,
+  .dlc-sidebar-who {
+    display: none;
+  }
+
+  .dlc-nav {
+    margin-top: 16px;
+  }
+
+  .dlc-sidebar-user {
+    flex-direction: column;
+    padding: 14px 0;
+  }
+
+  .dlc-chip-name {
+    display: none;
+  }
+}
+
+/* Top bar account menu (user chip). */
+.dlc-account {
+  position: relative;
+}
+
+button.dlc-user-chip {
+  font: 500 13px var(--dlc-font);
+  color: var(--dlc-text);
+  cursor: pointer;
+}
+
+.dlc-user-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 10;
+  min-width: 220px;
+  padding: 12px 0 6px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.14);
+}
+
+.dlc-user-menu[hidden] {
+  display: none;
+}
+
+.dlc-menu-name,
+.dlc-menu-role {
+  margin: 0;
+  padding: 0 16px;
+}
+
+.dlc-menu-name {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.dlc-menu-role {
+  margin-bottom: 8px;
+  color: var(--dlc-text-muted);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.dlc-menu-item {
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  padding: 10px 16px;
+  border: 0;
+  border-top: 1px solid #eef2f4;
+  background: none;
+  color: var(--dlc-text);
+  font: 14px var(--dlc-font);
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.dlc-menu-item:hover {
+  background: var(--dlc-active-bg);
+}
+
+.dlc-logo-link {
+  display: block;
+  width: fit-content;
+}
+
+/* Registry revision change: explicit reload offer (bottom-right toast). */
+.dlc-update-banner {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 12px 16px;
+  border: 1px solid #d6dee2;
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.14);
+  font: 14px var(--dlc-font);
+}
+
+/* Public frame and Home on phones: no horizontal overflow, hero text kept readable. */
+@media (max-width: 720px) {
+  .dlc-public-header {
+    flex-wrap: wrap;
+    height: auto;
+    padding: 8px 16px;
+    row-gap: 4px;
+  }
+
+  .dlc-public-brand {
+    gap: 10px;
+  }
+
+  .dlc-public-mark {
+    width: 40px;
+    height: 40px;
+  }
+
+  .dlc-public-nav {
+    order: 3;
+    width: 100%;
+    gap: 24px;
+    margin-left: 0;
+    padding: 4px 0;
+  }
+
+  .dlc-public-footer {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+    height: auto;
+    padding: 20px 16px;
+  }
+
+  .dlc-public-copy {
+    flex-wrap: wrap;
+  }
+
+  /* Show the text half of the artwork (≈ 900 of its 1802 px) at full width. */
+  .dlc-home {
+    aspect-ratio: 900 / 872;
+    background-size: auto 100%;
+    background-position: left center;
+  }
+}

@@ -1,0 +1,484 @@
+import assert from 'node:assert/strict';
+import test from 'node:test';
+import { Window } from 'happy-dom';
+import { createLifecycle } from '../../src/composition/lifecycle.ts';
+import { createShell } from '../../src/composition/shell.ts';
+import { renderFrame } from '../../src/layout/frame.ts';
+import { BASELINE_NAVIGATION } from '../../src/layout/navigation.ts';
+import { renderPublicFrame } from '../../src/layout/publicFrame.ts';
+
+const ORIGIN = 'https://dlc.test';
+const uuid = '3f2504e0-4f89-41d3-9a0c-0305e82c3301';
+const user = {
+  id: 'u1',
+  name: 'Administrador DI-LUCCA',
+  roles: ['ADMINISTRATOR'],
+  permissions: [],
+};
+
+/** In-memory History API double with shell indexes. */
+function fakeHistory(start) {
+  const entries = [{ url: new URL(start, ORIGIN), index: 0 }];
+  let at = 0;
+  const log = [];
+  let pop = () => {};
+  return {
+    log,
+    entries,
+    current: () => entries[at].url,
+    index: () => entries[at].index,
+    push(url, index) {
+      entries.splice(at + 1, Infinity, { url, index });
+      at += 1;
+      log.push(`push ${url.pathname}`);
+    },
+    replace(url, index) {
+      entries[at] = { url, index };
+      log.push(`replace ${url.pathname}`);
+    },
+    go(delta) {
+      at += delta;
+      log.push(`go ${delta}`);
+      pop(entries[at].url, entries[at].index);
+    },
+    back() {
+      at -= 1;
+      pop(entries[at].url, entries[at].index);
+    },
+    onPop(listener) {
+      pop = listener;
+    },
+  };
+}
+
+/** C02 test-double portal: renders its id and local path. */
+function portal(portalId, options = {}) {
+  const contexts = [];
+  return {
+    contexts,
+    portalId,
+    contractVersion: 1,
+    async mount(host, context) {
+      if (options.fail) throw new Error('down');
+      contexts.push(context);
+      host.innerHTML = `<h1 tabindex="-1">${portalId}</h1><p>${context.route.localPath}</p>`;
+      return {
+        updateRoute: async (route) => {
+          host.querySelector('p').textContent = route.localPath;
+        },
+        canLeave: async () => options.canLeave?.() ?? true,
+        unmount: async () => {
+          host.textContent = '';
+        },
+      };
+    },
+  };
+}
+
+async function setup(start, portals = {}, options = {}) {
+  const auth = { value: options.authenticated ?? true };
+  const events = [];
+  const window = new Window({ url: ORIGIN + start });
+  const { document } = window;
+  const frame = renderFrame(document, {
+    user,
+    navigation: BASELINE_NAVIGATION,
+    path: start,
+    onLogout: () => {},
+  });
+  const publicFrame = renderPublicFrame(document);
+  let n = 0;
+  const retries = [];
+  const lifecycle = createLifecycle({
+    container: frame.host,
+    deadlines: { load: 50, mount: 50, update: 50, leave: 50, unmount: 50 },
+    uuid: () => `id-${++n}`,
+    loadEntry: async (id) => {
+      if (!portals[id]) throw new Error('PORTAL_DISABLED');
+      return portals[id];
+    },
+    createContext: (base) => base,
+  });
+  const history = fakeHistory(start);
+  const shell = createShell({
+    document,
+    frames: { app: frame, public: publicFrame },
+    root: document.body,
+    lifecycle,
+    history,
+    isAuthenticated: () => auth.value,
+    sessionState: () => options.sessionState ?? 'anonymous',
+    retrySession: () => events.push('retry-session'),
+    telemetry: (event) => events.push(event),
+    user: () => user,
+    navigation: () => BASELINE_NAVIGATION,
+    onRetry: () => retries.push('retry'),
+    reload: () => retries.push('reload'),
+  });
+  await shell.start();
+  return { document, frame, history, shell, retries, auth, events };
+}
+
+const text = (el) => el.textContent.replace(/\s+/g, ' ').trim();
+
+test('C04: "/app" replaces to the dashboard; Clinical mounts Analytics in its host', async () => {
+  const { document, history } = await setup('/app', {
+    clinical: portal('clinical'),
+  });
+  assert.deepEqual(history.log, ['replace /app/dashboard']);
+  const analytics = document.querySelector('.dlc-analytics-host');
+  assert.match(text(analytics), /clinical\s*\/analytics/);
+  assert.ok(document.querySelector('.dlc-shortcut[href="/app/billing"]'));
+  assert.equal(document.activeElement.textContent, 'Panel');
+});
+
+test('FC-15: Clinical failing on the dashboard keeps shortcuts usable', async () => {
+  const { document, retries } = await setup('/app/dashboard', {});
+  const analytics = document.querySelector('.dlc-analytics-host');
+  const notice = analytics.querySelector('[data-code="PORTAL_UNAVAILABLE"]');
+  assert.ok(notice);
+  assert.equal(document.querySelectorAll('.dlc-shortcut').length, 5);
+  notice.querySelector('button').click();
+  assert.deepEqual(retries, ['retry']);
+});
+
+test('C04: request mounts the owner, updates history, active item and focus', async () => {
+  const { document, history, shell } = await setup('/app/dashboard', {
+    patient: portal('patient'),
+  });
+  assert.deepEqual(await shell.request({ path: '/app/patients/new' }), {
+    status: 'applied',
+  });
+  assert.equal(history.current().pathname, '/app/patients/new');
+  assert.match(
+    text(document.querySelector('#composition-host')),
+    /patient\s*\/new/,
+  );
+  assert.equal(
+    document.querySelector('nav a[aria-current]').textContent.trim(),
+    'Pacientes',
+  );
+  assert.equal(document.activeElement.textContent, 'patient');
+  await shell.request({ path: '/app/patients' });
+  assert.match(
+    text(document.querySelector('#composition-host')),
+    /patient\s*\/$/,
+  );
+});
+
+test('FC-06: legacy alias pushes the canonical clinical path', async () => {
+  const { history, shell } = await setup('/app/dashboard', {
+    clinical: portal('clinical'),
+  });
+  await shell.request({ path: `/app/patients/${uuid}` });
+  assert.equal(history.current().pathname, `/app/clinical/${uuid}`);
+  assert.deepEqual(history.log.slice(-1), [`push /app/clinical/${uuid}`]);
+});
+
+test('C04: invalid targets are rejected; unknown deep links show the shell 404', async () => {
+  const { document, history, shell } = await setup('/app/unknown', {});
+  assert.match(
+    text(document.querySelector('#composition-host')),
+    /Página no encontrada/,
+  );
+  assert.deepEqual(await shell.request({ path: '//evil.test/x' }), {
+    status: 'rejected',
+  });
+  assert.deepEqual(await shell.request({ path: '/app/nothing' }), {
+    status: 'rejected',
+  });
+  assert.equal(history.current().pathname, '/app/unknown');
+});
+
+test('FC-07: refused leave cancels and keeps URL; cancelled Back is compensated', async () => {
+  let allow = false;
+  const { history, shell } = await setup('/app/dashboard', {
+    clinical: portal('clinical'),
+    billing: portal('billing', { canLeave: () => allow }),
+  });
+  allow = true;
+  await shell.request({ path: '/app/billing' });
+  allow = false;
+  assert.deepEqual(await shell.request({ path: '/app/patients' }), {
+    status: 'cancelled',
+  });
+  assert.equal(history.current().pathname, '/app/billing');
+  history.back();
+  await shell.settled();
+  assert.equal(history.current().pathname, '/app/billing');
+  assert.deepEqual(history.log.slice(-1), ['go 1']);
+});
+
+test('C07: a failed portal shows a local notice; retry re-attempts', async () => {
+  const { document, retries } = await setup('/app/billing', {
+    billing: portal('billing', { fail: true }),
+  });
+  const host = document.querySelector('#composition-host');
+  assert.ok(host.querySelector('[data-code="PORTAL_UNAVAILABLE"]'));
+  assert.ok(document.querySelector('.dlc-sidebar nav a'));
+  host.querySelector('button').click();
+  assert.deepEqual(retries, ['retry']);
+});
+
+test('C04: anonymous protected deep link goes to IAM login with a one-time return', async () => {
+  const { history, shell } = await setup(
+    '/app/billing?x=1',
+    {
+      iam: portal('iam'),
+    },
+    { authenticated: false },
+  );
+  assert.equal(history.current().pathname, '/login');
+  assert.equal(shell.consumeReturn(), '/app/billing');
+  assert.equal(shell.consumeReturn(), null);
+});
+
+test('C04: same-origin link clicks are routed through the shell', async () => {
+  const { document, history } = await setup('/app/dashboard', {
+    clinical: portal('clinical'),
+    billing: portal('billing'),
+  });
+  document.querySelector('.dlc-shortcut[href="/app/billing"]').click();
+  await new Promise((resolve) => setTimeout(resolve, 20));
+  assert.equal(history.current().pathname, '/app/billing');
+});
+
+test('IAM public routes use the public frame; protected routes swap back', async () => {
+  const { document, shell } = await setup('/recover-password', {
+    iam: portal('iam'),
+    billing: portal('billing'),
+  });
+  assert.ok(
+    document.querySelector('.dlc-public #public-host [data-portal="iam"]'),
+  );
+  assert.equal(document.querySelector('.dlc-shell'), null);
+  await shell.request({ path: '/app/billing' });
+  assert.equal(document.querySelector('.dlc-public'), null);
+  assert.ok(document.querySelector('.dlc-shell [data-portal="billing"]'));
+});
+
+test('IAM moving from /login to /app/administration remounts in the app frame', async () => {
+  const { document, shell } = await setup('/app/dashboard', {
+    iam: portal('iam'),
+  });
+  await shell.request({ path: '/recover-password' });
+  await shell.request({ path: '/app/administration' });
+  assert.equal(document.querySelector('.dlc-dashboard'), null);
+  assert.equal(document.querySelector('.dlc-public'), null);
+  assert.ok(document.querySelector('.dlc-shell [data-portal="iam"]'));
+});
+
+test('C07: reportFailure from the live mount shows the local notice and a safe event', async () => {
+  const billing = portal('billing');
+  const { document, shell, events } = await setup('/app/billing', { billing });
+  const host = document.querySelector('[data-portal="billing"]');
+  assert.ok(host);
+  assert.equal(
+    await shell.reportFailure('id-x', { code: 'PORTAL_RENDER_FAILED' }),
+    false,
+  );
+  const { mountId } = billing.contexts[0];
+  assert.equal(
+    await shell.reportFailure(mountId, { code: 'NOT_A_CODE' }),
+    false,
+  );
+  assert.equal(
+    await shell.reportFailure(mountId, {
+      code: 'PORTAL_RENDER_FAILED',
+      detail: 'x',
+    }),
+    true,
+  );
+  assert.ok(
+    document.querySelector(
+      '#composition-host [data-code="PORTAL_UNAVAILABLE"]',
+    ),
+  );
+  assert.equal(document.querySelector('[data-portal="billing"]'), null);
+  assert.deepEqual(events, [
+    { code: 'PORTAL_RENDER_FAILED', portalId: 'billing', mountId },
+  ]);
+});
+
+test('C05: logout clears private content and goes to Login; sign-in returns once', async () => {
+  const { document, history, shell, auth } = await setup('/app/billing', {
+    billing: portal('billing'),
+    iam: portal('iam'),
+  });
+  auth.value = false;
+  await shell.sessionChanged();
+  assert.equal(history.current().pathname, '/login');
+  assert.equal(document.querySelector('[data-portal="billing"]'), null);
+  auth.value = true;
+  await shell.sessionChanged();
+  assert.equal(history.current().pathname, '/app/billing');
+  assert.ok(document.querySelector('.dlc-shell [data-portal="billing"]'));
+});
+
+test('mockup p. 4: with Clinical Analytics active the shell header is visually delegated', async () => {
+  const { document } = await setup('/app/dashboard', {
+    clinical: portal('clinical'),
+  });
+  const page = document.querySelector('.dlc-dashboard');
+  assert.equal(page.dataset.analytics, 'active');
+  const order = [...page.children].map((el) => el.className);
+  assert.ok(
+    order.indexOf('dlc-analytics-host') < order.indexOf('dlc-shortcuts'),
+  );
+});
+
+test('C05: unavailable or expired sessions show their page instead of Login', async () => {
+  const unavailable = await setup(
+    '/app/billing',
+    {},
+    {
+      authenticated: false,
+      sessionState: 'unavailable',
+    },
+  );
+  const page = unavailable.document.querySelector(
+    '[data-code="SESSION_UNAVAILABLE"]',
+  );
+  assert.ok(page);
+  assert.equal(unavailable.history.current().pathname, '/app/billing');
+  assert.ok(unavailable.document.querySelector('.dlc-public'));
+  page.querySelector('button').click();
+  assert.deepEqual(unavailable.events, ['retry-session']);
+
+  const expired = await setup(
+    '/app/billing',
+    {},
+    {
+      authenticated: false,
+      sessionState: 'expired',
+    },
+  );
+  assert.ok(
+    expired.document.querySelector(
+      '[data-code="SESSION_EXPIRED"] a[href="/login"]',
+    ),
+  );
+  assert.equal(expired.shell.consumeReturn(), '/app/billing');
+});
+
+test('Home: anonymous / renders the Home in the public frame without redirecting', async () => {
+  const { document, history } = await setup('/', {}, { authenticated: false });
+  assert.equal(history.current().pathname, '/');
+  assert.ok(document.querySelector('.dlc-public #public-host .dlc-home'));
+});
+
+test('owner decision: signed-in visitors still see the Home at / and skip Login', async () => {
+  const { document, history, shell } = await setup('/', {});
+  assert.equal(history.current().pathname, '/');
+  assert.ok(document.querySelector('.dlc-public .dlc-home'));
+  await shell.request({ path: '/login' });
+  assert.equal(history.current().pathname, '/app/dashboard');
+});
+
+test('C07: a down portal notice turns into "available" when its probe succeeds', async () => {
+  const window = new Window({ url: ORIGIN + '/app/billing' });
+  const { document } = window;
+  const frame = renderFrame(document, {
+    user,
+    navigation: BASELINE_NAVIGATION,
+    path: '/app/billing',
+    onLogout: () => {},
+  });
+  let tick;
+  const shell = createShell({
+    document,
+    frames: { app: frame, public: renderPublicFrame(document) },
+    root: document.body,
+    lifecycle: createLifecycle({
+      container: frame.host,
+      deadlines: { load: 50, mount: 50, update: 50, leave: 50, unmount: 50 },
+      uuid: () => 'id',
+      loadEntry: async () => {
+        throw new Error('down');
+      },
+      createContext: (b) => b,
+    }),
+    history: fakeHistory('/app/billing'),
+    isAuthenticated: () => true,
+    user: () => user,
+    navigation: () => BASELINE_NAVIGATION,
+    onRetry: () => {},
+    reload: () => {},
+    probe: async (id) => id === 'billing',
+    schedule: (fn) => {
+      tick = fn;
+      return () => {};
+    },
+  });
+  await shell.start();
+  assert.ok(document.querySelector('[data-code="PORTAL_UNAVAILABLE"]'));
+  await tick();
+  assert.ok(document.querySelector('[data-code="PORTAL_AVAILABLE"]'));
+});
+
+test('C07: a portal that cannot be loaded is recorded with its stage and identifiers only', async () => {
+  const { events } = await setup('/app/billing', {});
+  assert.deepEqual(events, [
+    { code: 'PORTAL_UNAVAILABLE', portalId: 'billing', stage: 'load' },
+  ]);
+});
+
+test('C07 + owner decision: an active portal whose entry stops answering is replaced by the notice', async () => {
+  const window = new Window({ url: ORIGIN + '/app/billing' });
+  const { document } = window;
+  const frame = renderFrame(document, {
+    user,
+    navigation: BASELINE_NAVIGATION,
+    path: '/app/billing',
+    onLogout: () => {},
+  });
+  const ticks = [];
+  let reachable = true;
+  const events = [];
+  const shell = createShell({
+    document,
+    frames: { app: frame, public: renderPublicFrame(document) },
+    root: document.body,
+    lifecycle: createLifecycle({
+      container: frame.host,
+      deadlines: { load: 50, mount: 50, update: 50, leave: 50, unmount: 50 },
+      uuid: () => 'm-1',
+      loadEntry: async () => portal('billing'),
+      createContext: (b) => b,
+    }),
+    history: fakeHistory('/app/billing'),
+    isAuthenticated: () => true,
+    user: () => user,
+    navigation: () => BASELINE_NAVIGATION,
+    onRetry: () => {},
+    reload: () => {},
+    reachable: async () => reachable,
+    schedule: (fn) => {
+      ticks.push(fn);
+      return () => {};
+    },
+    telemetry: (e) => events.push(e),
+  });
+  await shell.start();
+  assert.ok(document.querySelector('[data-portal="billing"]'));
+  await ticks[0]();
+  assert.ok(document.querySelector('[data-portal="billing"]'));
+  reachable = false;
+  await ticks[0]();
+  assert.ok(
+    document.querySelector('[data-portal="billing"]'),
+    'one miss is tolerated',
+  );
+  await ticks[0]();
+  assert.equal(document.querySelector('[data-portal="billing"]'), null);
+  assert.ok(
+    document.querySelector(
+      '#composition-host [data-code="PORTAL_UNAVAILABLE"]',
+    ),
+  );
+  assert.deepEqual(events.at(-1), {
+    code: 'PORTAL_LOST',
+    portalId: 'billing',
+    mountId: 'm-1',
+  });
+});

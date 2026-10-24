@@ -42,11 +42,8 @@ export type ControlResult =
   | Readonly<{ ok: true; status: number; data: SessionSnapshot | null }>
   | Readonly<{ ok: false; status: 0; error: string }>;
 
-const COMPLETIONS = [
-  'AuthLogin',
-  'AuthVerifyMFAchallenge',
-  'AuthConfirmMFAenrollment',
-];
+// C05 under ADR-016: password login is the only session completion.
+const COMPLETIONS = ['AuthLogin'];
 const strings = (v: unknown): v is string[] =>
   Array.isArray(v) && v.every((s) => typeof s === 'string');
 

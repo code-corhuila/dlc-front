@@ -93,8 +93,8 @@ test('C05: completion establishes; failure keeps anonymous; logout clears first'
   const session = createSession(port);
   await session.start();
   const done = await session.complete({
-    operationId: 'AuthVerifyMFAchallenge',
-    body: { code: '000000' },
+    operationId: 'AuthLogin',
+    body: { email: 'staff@example.test', password: 'placeholder' },
   });
   assert.equal(done.ok, true);
   assert.equal(done.data.state, 'authenticated');
@@ -107,7 +107,7 @@ test('C05: completion establishes; failure keeps anonymous; logout clears first'
   const failing = createSession(auth({ complete: new Error('bad proof') }));
   await failing.start();
   const result = await failing.complete({
-    operationId: 'AuthVerifyMFAchallenge',
+    operationId: 'AuthLogin',
     body: {},
   });
   assert.equal(result.ok, false);
@@ -135,6 +135,22 @@ test('C05: unknown completion never reaches Auth', async () => {
   assert.deepEqual(result.ok, false);
   assert.equal(result.error, 'INVALID_REQUEST');
   assert.deepEqual(port.calls, ['restore']);
+});
+
+test('ADR-016: removed MFA completions never reach Auth', async () => {
+  const port = auth();
+  const session = createSession(port);
+  await session.start();
+  for (const operationId of [
+    'AuthVerifyMFAchallenge',
+    'AuthConfirmMFAenrollment',
+  ]) {
+    const result = await session.complete({ operationId, body: {} });
+    assert.equal(result.ok, false, operationId);
+    assert.equal(result.error, 'INVALID_REQUEST', operationId);
+  }
+  assert.deepEqual(port.calls, ['restore']);
+  assert.equal(session.getSnapshot().state, 'anonymous');
 });
 
 test('C05: logout outage is reported as unconfirmed, never as revoked', async () => {

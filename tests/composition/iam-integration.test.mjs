@@ -86,6 +86,13 @@ test('preview IAM data is role-scoped and never accepts writes as real Auth', as
       body: { email: 'admin@demo.test', password: 'wrong' },
     }),
   );
+  await assert.rejects(
+    admin.complete({
+      operationId: 'AuthVerifyMFAchallenge',
+      body: { persona: 'ADMINISTRATOR' },
+    }),
+    /UNSUPPORTED_DEMO_OPERATION/,
+  );
   await admin.complete({
     operationId: 'AuthLogin',
     body: { email: 'admin@demo.test', password: 'Demo1234!' },

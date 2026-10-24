@@ -40,7 +40,7 @@ Step-by-step rules for portal teams: `docs/integration/portal-integration-guide.
 | `src/core/http/` | Shared request transport and target validation (C06) |
 | `src/layout/` | Common frame, public frame, Home, Dashboard shortcuts, 404 and service error pages |
 | `public/` | Static shell (`index.html`, styles, mockup assets) |
-| `fixtures/` | **Development only**: demo registry, C02 test doubles, Auth double, `dev-session.json` |
+| `fixtures/` | **Development only**: demo registry, Auth double, `dev-session.json` |
 | `deploy/` | Dockerfile, nginx template (same-origin proxy, `no-store`), demo compose |
 | `scripts/` | Build helpers, local preview server, PR gates |
 

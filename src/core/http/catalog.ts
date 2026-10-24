@@ -5,13 +5,11 @@ export type Authorization =
   | Readonly<{ ok: true; operation: Operation }>
   | Readonly<{ ok: false; error: 'INVALID_REQUEST' }>;
 
-// C05: login, cookie-changing and MFA-completion operations use session controls.
+// C05: login and cookie-changing operations use session controls.
 const CONTROLLED = new Set([
   'AuthLogin',
   'AuthRotaterefreshtoken',
   'AuthLogout',
-  'AuthVerifyMFAchallenge',
-  'AuthConfirmMFAenrollment',
 ]);
 const CSRF_PATH = '/api/v1/auth/csrf';
 

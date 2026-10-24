@@ -49,12 +49,7 @@ test('C05/C06: session controls are excluded from the generic HTTP capability', 
     ok('clinical', 'POST', '/api/v1/auth/login').error,
     'INVALID_REQUEST',
   );
-  for (const path of [
-    '/api/v1/auth/refresh',
-    '/api/v1/auth/logout',
-    '/api/v1/auth/mfa-verifications',
-    '/api/v1/auth/mfa-enrollment-confirmations',
-  ])
+  for (const path of ['/api/v1/auth/refresh', '/api/v1/auth/logout'])
     assert.equal(ok('iam', 'POST', path).error, 'INVALID_REQUEST', path);
   assert.equal(ok('iam', 'GET', '/api/v1/auth/csrf').error, 'INVALID_REQUEST');
 });

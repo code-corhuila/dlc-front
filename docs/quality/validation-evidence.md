@@ -934,3 +934,32 @@ width; the mockup chip itself overflows the 1280 px page edge.
 - **Limitation:** the MFA names still listed as session controls in `src/core/session/session.ts`
   and `src/core/http/catalog.ts` are left for a separate ADR-016 cleanup; they no longer match any
   catalogued operation and change no behaviour.
+
+## DEV-FRONT-ADR016-001
+
+- **Story:** HU-IAM-001 (`code-corhuila/dlc-docs#47`); ADR-016 removes MFA from the project scope
+  and C05 makes `AuthLogin` the only `iamSession.complete` operation.
+- **Change:** closes the limitation recorded in `DEV-FRONT-CATALOG-002`.
+  - `src/core/session/session.ts`: `AuthLogin` is the only accepted completion;
+    `AuthVerifyMFAchallenge` and `AuthConfirmMFAenrollment` are now rejected as `INVALID_REQUEST`
+    before reaching Auth.
+  - `src/core/http/catalog.ts`: the two MFA names leave the session-control set.
+  - `fixtures/dev-auth.js`: the development Auth double no longer accepts the MFA persona
+    shortcut.
+  - The legacy IAM test double (`fixtures/portals/iam/0.0.0-double/`) and its helper
+    (`fixtures/portals/_double/`) are removed: the double signed in through the MFA operation, no
+    registry referenced it, and the IAM `0.1.0-local` release signs in with `AuthLogin`.
+  - `README.md` and `docs/spec/dlc-front-spec.md` stop describing those doubles and MFA.
+- **TDD:** `ADR-016: removed MFA completions never reach Auth` (session) and the MFA rejection in
+  `preview IAM data is role-scoped…` (development Auth double) failed first: the session
+  returned `ok: true` and called Auth, and the double established a session. Both pass after the
+  change. The C05 completion test now uses `AuthLogin`.
+- **Validation:** typecheck, lint, format check, tests (150), coverage (99.57 % lines, 91.29 %
+  branches), build and `git diff --check` pass. No `MFA` reference remains in `src/` or
+  `fixtures/`.
+- **FC cases:** FC-09 keeps its contract wording (login failure, no session); its real-Auth part
+  stays deferred to IAM integration.
+- **Annex H differences:** none.
+- **Browser check:** not performed; no visual change. Sign-in through the IAM `0.1.0-local`
+  release already used `AuthLogin` and is covered by the preview integration test.
+- **Limitation:** real password login remains pending on Auth (ADR-016).

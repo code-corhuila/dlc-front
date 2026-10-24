@@ -95,3 +95,18 @@ test('C02/C06: the per-mount capability uses the catalogue, the mount signal and
     /CANCELLED/,
   );
 });
+
+test('C06: HU-CLN-003 Clinical Analytics is a catalogued protected read', () => {
+  const dashboard = ok(
+    'clinical',
+    'GET',
+    '/api/v1/clinical-analytics/dashboard',
+  );
+  assert.equal(dashboard.ok, true);
+  assert.equal(dashboard.operation.public, false);
+  assert.equal(dashboard.operation.idempotent, false);
+  assert.equal(
+    ok('clinical', 'POST', '/api/v1/clinical-analytics/dashboard').error,
+    'INVALID_REQUEST',
+  );
+});

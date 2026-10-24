@@ -120,9 +120,6 @@ export function createAuthPort() {
         if (!account || body?.password !== DEMO_PASSWORD)
           throw new Error('INVALID_DEMO_CREDENTIALS');
         role = account.role;
-      } else if (operationId === 'AuthVerifyMFAchallenge') {
-        // Retain the old C02 persona buttons used by the legacy fixture.
-        role = body?.persona;
       } else {
         throw new Error('UNSUPPORTED_DEMO_OPERATION');
       }

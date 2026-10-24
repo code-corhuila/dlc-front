@@ -916,3 +916,21 @@ width; the mockup chip itself overflows the 1280 px page edge.
 - **Sources:** merged PRs on `develop`, `git log`, `fixtures/portal-registry.json`,
   `deploy/` and the lifecycle and HTTP deadlines in `src/`. Every item links to its PR.
 - **Validation:** documentation only; no source, test or gate changed.
+
+## DEV-FRONT-CATALOG-002
+
+- **Change:** the C06 operation catalogue is regenerated with `scripts/generate-catalog.mjs` from
+  dlc-docs `f5ebbec` (it was `638e4f2`). It adds `GET /api/v1/clinical-analytics/dashboard`
+  (`ClinicalReaddashboard`, protected, HU-CLN-003, dlc-docs PR 122) and drops the three MFA
+  operations removed from `auth-service.yaml` by ADR-016. Without it the capability rejected the
+  Clinical Analytics read as `INVALID_REQUEST`, so `/app/dashboard` could not load real data.
+- **TDD:** a catalogue test requiring the dashboard as a protected, non-idempotent read failed
+  first (`dashboard.ok` was `false`) and passes after the regeneration.
+- **Validation:** typecheck, lint, format check, tests (149), coverage (99.57 % lines, 91.29 %
+  branches), build and `git diff --check` pass; size 0/400 (generated output and tests excluded).
+- **Browser check (`:8088`, local stand-in Gateway, real Clinical API and portal build):** signed in
+  as the demo dentist, `/app/dashboard` renders the Clinical Analytics snapshot from the API
+  instead of the "shared session" placeholder.
+- **Limitation:** the MFA names still listed as session controls in `src/core/session/session.ts`
+  and `src/core/http/catalog.ts` are left for a separate ADR-016 cleanup; they no longer match any
+  catalogued operation and change no behaviour.

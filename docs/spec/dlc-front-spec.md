@@ -35,7 +35,7 @@ business rules, resource authorization, Analytics indicators (HU-CLN-003), publi
 | NFR-01 | TypeScript strict, tests, coverage, build, CI (Annex I), ≤400 lines/PR | norm 9.2 | CI |
 | NFR-02 | Accessibility: landmarks, labelled controls, visible focus, heading focus | design system | review |
 
-FC-09 and FC-10 (real MFA/refresh across tabs) require Auth and are deferred to IAM integration.
+FC-09 and FC-10 (real password login failure/refresh across tabs) require Auth and are deferred to IAM integration.
 
 ## 4. Visual elements assigned to dlc-front
 

@@ -1,0 +1,4 @@
+{
+  "issuer": "REPLACE_WITH_IAM_JWT_ISSUER",
+  "audience": "REPLACE_WITH_IAM_JWT_AUDIENCE"
+}

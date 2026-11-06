@@ -49,12 +49,13 @@ test('IAM release and own-sessions navigation are valid alongside the other port
   for (const [id, release] of [
     ['patient', '1.0.0'],
     ['appointments', '2.1.0'],
-    ['clinical', '0.1.0-demo'],
+    ['clinical', '0.1.0'],
   ]) {
     assert.equal(registry.portals[id].status, 'available');
     assert.equal(registry.portals[id].release, release);
   }
 
+  assert.equal(registry.portals.clinical.release, '0.1.0');
   assert.equal(registry.portals.billing.status, 'available');
   assert.equal(registry.portals.billing.release, '2.0.0');
 });

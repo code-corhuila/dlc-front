@@ -11,7 +11,7 @@ services:
     environment:
       IAM_UPSTREAM: ${IAM_UPSTREAM:-http://iam-portal-demo}
       PATIENT_UPSTREAM: ${PATIENT_UPSTREAM:-http://patient-portal-demo}
-      CLINICAL_UPSTREAM: ${CLINICAL_UPSTREAM:-http://clinical-portal-demo}
+      CLINICAL_UPSTREAM: ${CLINICAL_UPSTREAM:-http://clinical-portal-dlc-front}
       APPOINTMENTS_UPSTREAM: ${APPOINTMENTS_UPSTREAM:-http://appointments-portal-demo}
       BILLING_UPSTREAM: ${BILLING_UPSTREAM:-http://billing-portal-demo}
       # The compositor strips /api/v1 before proxying, so the Gateway base keeps it.
@@ -43,7 +43,7 @@ networks:
   patient:
     external: true
     name: ${PATIENT_NETWORK:-dlc-patient-portal_default}
-  # Created by dlc-clinical-portal's compose: start Clinical first (docs/demo).
+  # Created by dlc-clinical-portal's compose (container clinical-portal-dlc-front): start it first.
   clinical:
     external: true
     name: ${CLINICAL_NETWORK:-dlc-clinical-portal_default}

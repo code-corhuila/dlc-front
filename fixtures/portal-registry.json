@@ -100,8 +100,8 @@
     {
       "portalId": "clinical",
       "repository": "dlc-clinical-portal",
-      "release": "0.1.0-demo",
-      "entryUrl": "/portals/clinical/0.1.0-demo/entry.js",
+      "release": "0.1.0",
+      "entryUrl": "/portals/clinical/0.1.0/entry.js",
       "navigation": [
         {
           "id": "dashboard",

@@ -76,7 +76,7 @@ Clinical is written in dlc-front.
 | FR-09 Common frame | Done | DEV-FRONT-FRAME-002, FIT-001, TOPBAR-001 |
 | FR-10 Dashboard | Done | DEV-FRONT-CLINICAL-001, DASHBOARD-CHECK-001 |
 | FR-11 Session and browser screens | Done | DEV-FRONT-ERRORS-001 |
-| FR-12 Deployment | Done | DEV-FRONT-DEPLOY-001, DEPLOY-002 |
+| FR-12 Deployment | Done; real Gateway wiring available | DEV-FRONT-DEPLOY-001, DEPLOY-002, GATEWAY-001 |
 | Clinical real entry | Integrated (demo build `0.1.0-demo`) | DEV-FRONT-CLINICAL-001 |
 
 ## 7. Project-owner decisions (differences with dlc-docs)
@@ -89,6 +89,7 @@ Clinical is written in dlc-front.
 | Sidebar follows the mockup labels and order with owner sub-areas | C04 baseline descriptors | DEV-FRONT-SIDEBAR-002 |
 | Down portals are probed and offer "Actualizar"; new registry revisions are announced | C07 explicit retry (kept: nothing reloads by itself) | DEV-FRONT-RECOVERY-001 |
 | Demo "Historia clínica" opens `/app/clinical/patient-a` | Owner descriptor `/app/clinical` | DEV-FRONT-DEMO-002 |
+| Deployment can point at the real Gateway on `platform` (mock stays the default) | Real Gateway out of scope for this stage | DEV-FRONT-GATEWAY-001 |
 
 These should be reflected in dlc-docs by its owner.
 

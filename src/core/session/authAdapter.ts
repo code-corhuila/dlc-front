@@ -272,6 +272,8 @@ export function createAuthAdapter(deps: AuthAdapterDeps) {
 
     restore: (): Promise<Establishment | null> => renew(false),
 
+    isBlocked: () => control.read()?.blocked !== false,
+
     /** BroadcastChannel dlc-session-v1 message: only {generation, kind} is accepted. */
     remote(message: unknown): ControlKind | null {
       const m = record(message);

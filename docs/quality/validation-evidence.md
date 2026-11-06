@@ -1120,3 +1120,33 @@ width; the mockup chip itself overflows the 1280 px page edge.
 - **Annex H differences:** none.
 - **Limitation:** `retryRestore` still returns no C06 Result, and the "server logout unconfirmed"
   screen is not rendered by the shell; recorded for a follow-up.
+
+## DEV-FRONT-AUTH-RECOVERY-001
+
+- **Story:** HU-IAM-001 (`code-corhuila/dlc-docs#47`); issue #1. Closes the limitations of
+  `DEV-FRONT-AUTH-SYNC-001` (FC-11).
+- **Change:**
+  - `src/core/session/session.ts`: `retryRestore()` resolves the C06 Result (`ok`, status 200,
+    sanitized snapshot as data); when `auth.isBlocked()` is true it fails locally with
+    `SESSION_UNAVAILABLE` without asking Auth; an unavailable Auth also returns
+    `SESSION_UNAVAILABLE`. `start` became a named function so both share it.
+  - `src/core/session/authAdapter.ts`: `isBlocked()` is true for a blocked or invalid marker.
+  - `src/layout/pages.ts`: `renderLogoutUnconfirmed` (`role="alert"`,
+    `data-code="LOGOUT_UNCONFIRMED"`): states that the browser signed out but the server logout
+    was not confirmed, with "Reintentar cierre de sesión"; it never claims revocation.
+  - `src/main.ts`: the frame logout shows that notice when `session.logout()` fails and retries
+    only on the explicit click; IAM's `iamSession.retryRestore` returns the new Result.
+- **TDD:** 3 session tests, 1 adapter test and 1 page test failed first (`retryRestore` and
+  `isBlocked` missing; `renderLogoutUnconfirmed` not exported). All pass after the change.
+- **Validation:** typecheck, lint, format check, tests (204), coverage (99.46 % lines, 91.62 %
+  branches), build and `git diff --check` pass. Size 80/400.
+- **Browser check (preview):** the notice rendered from the built module appears at the bottom
+  with the existing banner style, `role="alert"`, the Spanish text above and a working retry
+  button. A real failed logout was not reproduced: the development double never fails and the
+  real adapter needs the Gateway to sign in first.
+- **FC cases:** FC-11 complete at unit level.
+- **Annex H differences:** none. The notice is not in the mockup; it reuses the update banner
+  style.
+- **Limitation:** after a reload the blocked marker cannot tell a confirmed from an unconfirmed
+  logout (the record holds only `generation` and `blocked`), so the notice is shown only in the
+  page where the logout failed.

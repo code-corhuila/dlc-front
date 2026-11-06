@@ -1258,3 +1258,25 @@ width; the mockup chip itself overflows the 1280 px page edge.
 - **Annex H differences:** none.
 - **Limitation:** no real login yet: IAM, its database and the owner APIs were not running. The
   front compose still requires the portal networks of the demo.
+
+## DEV-FRONT-NO-DEMO-AUTH-001
+
+- **Story:** HU-IAM-001 (`code-corhuila/dlc-docs#47`); issue #1. Project-owner direction
+  (2026-11-06): real integration and final delivery, no demo data or doubles.
+- **Change:**
+  - Removed the development Auth double: `fixtures/dev-auth.js` (synthetic staff, personas and
+    `demoFetch`) and `fixtures/dev-session.json`, plus their nginx locations.
+  - `src/core/session/authConfig.ts`: `UNCONFIGURED_AUTH`, a frozen port whose restore and
+    completion reject `AUTH_NOT_CONFIGURED`.
+  - `src/main.ts`: only `configured` Auth data builds the real adapter; absent or invalid data uses
+    `UNCONFIGURED_AUTH` (session unavailable). No dynamic import of a double, no `demoFetch`.
+  - `tests/composition/iam-integration.test.mjs`: removed the test of the double's synthetic data.
+  - `README.md`: no synthetic accounts or personas; sign-in only through IAM.
+- **TDD:** `C05: without valid Auth deployment data the session fails closed, never a double`
+  failed first (`UNCONFIGURED_AUTH` not exported); passes after the change.
+- **Validation:** typecheck, lint, format check, tests (210), coverage (99.47 % lines, 91.71 %
+  branches), build and `git diff --check` pass. Size 293/400 (mostly removed lines).
+- **FC cases:** FC-09 now only through the real adapter.
+- **Annex H differences:** none.
+- **Limitation:** the base compose still has the Prism mock profile and the `-demo` portal
+  releases in `fixtures/portal-registry.json`; they are removed in the next increments.

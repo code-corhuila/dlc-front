@@ -21,6 +21,8 @@ server {
   location ~ ^/api/v1/(.*)$ {
     set $gateway ${GATEWAY_UPSTREAM};
     proxy_pass $gateway/$1$is_args$args;
+    # The Gateway rate-limits per browser: it trusts this address only from this container.
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
     add_header Cache-Control "no-store" always;
   }
 

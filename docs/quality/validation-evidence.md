@@ -1220,3 +1220,41 @@ width; the mockup chip itself overflows the 1280 px page edge.
   - `GATEWAY_TRUSTED_PROXY` on the Gateway must be set to this container's `platform`
     address by whoever assembles the platform (`-infra`).
   - The real Auth adapter (FC-09, FC-10) is still pending.
+
+## DEV-FRONT-GATEWAY-001
+
+- **Story:** HU-IAM-001 (`code-corhuila/dlc-docs#47`); issue #1. Connects the compositor to the
+  real `dlc-api-gateway` (C06).
+- **Change:**
+  - `deploy/compose.gateway.yml`: override that joins the external `platform` network, sets
+    `GATEWAY_UPSTREAM=http://dlc-api-gateway:8080/api/v1` (the compositor strips `/api/v1`, the
+    real Gateway keeps it) and mounts `AUTH_CONFIG_FILE` (required) as `auth-config.json`.
+  - `deploy/nginx.conf.template`: `/auth-config.json` is served from `/usr/share/nginx/auth`, a
+    separate mount, so the demo `fixtures/` mount stays read-only and untouched.
+  - `deploy/auth-config.example.json`: placeholders for `IAM_JWT_ISSUER` and `IAM_JWT_AUDIENCE`;
+    used literally it is rejected by the adapter (fails closed).
+  - `README.md`: how to run against the real Gateway and the origin settings required in IAM
+    (`IAM_AUTH_ALLOWED_ORIGIN`) and the Gateway (`GATEWAY_ALLOWED_ORIGIN`).
+  - `src/core/http/__generated__/catalog.ts`: regenerated from dlc-docs `6953a34`; the 68
+    Gateway-exposed operations are unchanged, only the revision moves from `f5ebbec`.
+- **TDD:** configuration change; verification commands recorded instead of RED.
+- **Validation:** typecheck, lint, format check, tests (210), build and `git diff --check` pass.
+  Size 40/400 (generated catalog excluded). `docker compose -f deploy/compose.yml -f
+  deploy/compose.gateway.yml config` resolves `GATEWAY_UPSTREAM`, the `platform` network and the
+  `auth-config.json` mount.
+- **Integration check (Docker, `platform` network):** `dlc-api-gateway` image built from its
+  `develop` (`672669a`) and the front image from this branch, no owner APIs running:
+  - `GET /auth-config.json` 200, `Cache-Control: no-store`;
+  - `GET /api/v1/auth/csrf` reached the Gateway: 503 `SERVICE_UNAVAILABLE` envelope with
+    `X-Correlation-Id`/`traceId`;
+  - `GET /api/v1/patients` without `Authorization`: 401 `UNAUTHORIZED`, `WWW-Authenticate: Bearer`;
+  - with `Authorization` and `X-Correlation-Id: 11111111-1111-4111-8111-111111111111`: 503 and the
+    same id echoed;
+  - `/internal/v1/...` is never proxied by the compositor (it returns the shell HTML).
+  - Browser on `/app/dashboard`: `auth-config.json` 200, `/api/v1/auth/csrf` 503, the shell shows
+    "Servicio de autenticación no disponible"; `dev-auth.js` is not requested.
+  Containers and images were removed afterwards.
+- **FC cases:** FC-13 (forbidden paths not proxied) and the C06 Gateway path end to end.
+- **Annex H differences:** none.
+- **Limitation:** no real login yet: IAM, its database and the owner APIs were not running. The
+  front compose still requires the portal networks of the demo.

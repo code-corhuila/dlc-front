@@ -1,4 +1,5 @@
 import type { AuthPort, Establishment } from './session.ts';
+import type { ControlRecord, SessionControl } from './sessionControl.ts';
 
 /**
  * C05 Auth adapter: talks to the same-origin Gateway on behalf of the shell only.
@@ -14,9 +15,25 @@ export type AuthAdapterDeps = Readonly<{
   audience: string;
   /** Web Locks (navigator.locks): serializes cookie operations across tabs (FC-10). */
   locks: LockManagerLike;
+  /** Shared generation/blocked marker (FC-11); defaults to an unshared in-memory record. */
+  control?: SessionControl;
+  /** A renewal 401 ended the browser session; the shell clears identity (C05). */
+  onSessionEnded?: (reason: 'UNAUTHORIZED') => void;
   timeoutMs?: number;
   lockTimeoutMs?: number;
 }>;
+
+function memoryControl(): SessionControl {
+  let current: ControlRecord = { generation: 0, blocked: false };
+  return Object.freeze({
+    read: () => current,
+    advance: (kind: 'established' | 'cleared') =>
+      (current = {
+        generation: current.generation + 1,
+        blocked: kind === 'cleared',
+      }),
+  });
+}
 
 export type LockManagerLike = Readonly<{
   request: <T>(
@@ -67,6 +84,7 @@ function claimsOf(token: string): Record<string, unknown> | null {
 
 export function createAuthAdapter(deps: AuthAdapterDeps) {
   const timeoutMs = deps.timeoutMs ?? 10_000;
+  const control = deps.control ?? memoryControl();
   let access: Readonly<{ token: string; expiresAtMs: number }> | null = null;
 
   async function send(
@@ -174,17 +192,39 @@ export function createAuthAdapter(deps: AuthAdapterDeps) {
     }
   }
 
-  /** CSRF proof, then rotation; the access token survives only a successful rotation. */
-  async function rotate(): Promise<Establishment | null> {
+  /** Under the lock: end the browser session everywhere and block auto-restoration. */
+  function end(): null {
+    access = null;
+    control.advance('cleared');
+    return null;
+  }
+
+  /**
+   * CSRF proof, then rotation; the access token survives only a successful rotation of
+   * the current generation. A blocked or invalid marker suppresses it without network.
+   */
+  async function rotate(renewing: boolean): Promise<Establishment | null> {
+    const start = control.read();
+    if (!start || start.blocked) return (access = null);
     try {
       const proof = await csrfProof();
-      if (proof === null) return (access = null);
-      const response = await send('POST', '/refresh', {
-        'x-csrf-token': proof,
-      });
-      if (response.status === 401) return (access = null);
+      const response =
+        proof === null
+          ? null
+          : await send('POST', '/refresh', { 'x-csrf-token': proof });
+      if (response === null || response.status === 401) {
+        if (!renewing) return (access = null);
+        // Renewal 401 ends the session; the failed request is never replayed.
+        end();
+        deps.onSessionEnded?.('UNAUTHORIZED');
+        return null;
+      }
       if (!response.ok) throw new AuthError('SESSION_UNAVAILABLE');
-      return await install(response);
+      const est = await install(response);
+      // FC-12: a response that outlived its generation never installs state.
+      if (control.read()?.generation !== start.generation)
+        return (access = null);
+      return est;
     } catch (error) {
       access = null;
       throw error;
@@ -193,8 +233,10 @@ export function createAuthAdapter(deps: AuthAdapterDeps) {
 
   // Single-flight within the tab: concurrent restores and renewals share one rotation.
   let renewal: Promise<Establishment | null> | null = null;
-  const renew = () =>
-    (renewal ??= exclusive(rotate).finally(() => (renewal = null)));
+  const renew = (renewing: boolean) =>
+    (renewal ??= exclusive(() => rotate(renewing)).finally(
+      () => (renewal = null),
+    ));
 
   const port = {
     accessToken: () =>
@@ -205,11 +247,17 @@ export function createAuthAdapter(deps: AuthAdapterDeps) {
       if (!access) return null;
       if (deps.now() < access.expiresAtMs - RENEW_WINDOW_MS)
         return access.token;
-      await renew().catch(() => null);
+      await renew(true).catch(() => null);
       return port.accessToken();
     },
 
-    restore: (): Promise<Establishment | null> => renew(),
+    restore: (): Promise<Establishment | null> => renew(false),
+
+    /** Protected 401: local access ends now; the block is recorded under the lock. */
+    async block(): Promise<void> {
+      access = null;
+      await exclusive(async () => void end()).catch(() => void end());
+    },
 
     async complete(input: {
       operationId: string;
@@ -223,7 +271,10 @@ export function createAuthAdapter(deps: AuthAdapterDeps) {
         // Generic failure: no account state, eligibility or history is disclosed.
         if (response.status === 401) throw new AuthError('UNAUTHORIZED');
         if (!response.ok) throw new AuthError('SESSION_UNAVAILABLE');
-        return install(response);
+        const est = await install(response);
+        // Deliberate sign-in clears the block and invalidates other tabs' tokens.
+        control.advance('established');
+        return est;
       });
     },
 
@@ -231,6 +282,8 @@ export function createAuthAdapter(deps: AuthAdapterDeps) {
     async logout(): Promise<void> {
       access = null;
       await exclusive(async () => {
+        // Block and notify other tabs before Auth is asked to revoke.
+        end();
         const proof = await csrfProof();
         if (proof === null) return;
         const response = await send('POST', '/logout', {

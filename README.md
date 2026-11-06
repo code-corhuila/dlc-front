@@ -56,18 +56,17 @@ npm run build
 npm run preview          # http://localhost:4180, Clinical demo expected on :4175
 ```
 
-Docker demo (start Clinical first, its network is used by dlc-front):
+Docker deployment: start `dlc-api-gateway`, IAM and the owner APIs on the `platform` network
+and the portal containers from their repositories; copy `deploy/auth-config.example.json`
+with the stage's `IAM_JWT_ISSUER` and `IAM_JWT_AUDIENCE`, then:
 
 ```sh
-# in dlc-clinical-portal
-docker compose -f deploy/compose.yml up --build -d
-# in dlc-front
-docker compose -f deploy/compose.yml up --build -d   # http://localhost:8080
+AUTH_CONFIG_FILE=/absolute/path/auth-config.json \
+  docker compose -f deploy/compose.yml up --build -d   # http://localhost:8080
 ```
 
 Variables are listed in `.env.example`. There is no development sign-in: without a valid
 `auth-config.json` the session is unavailable, and sign-in always goes through IAM.
-The demo script is `docs/demo/clinical-dashboard-demo.md`.
 
 The IAM image serves `/portals/iam/0.1.0-local/entry.js`. After the front Compose creates
 `dlc-front_default`, start `dlc-iam-portal/deploy/compose.yml` on that network. The front
@@ -76,15 +75,6 @@ proxies IAM assets to `iam-portal-demo` and selects the portal for `/login`,
 aligned with `IAM_RELEASE` if either changes.
 For `npm run preview`, `IAM_ORIGIN` must point to an IAM asset server that serves the
 versioned path; the Angular standalone preview on port 4201 does not serve that module path.
-
-Real Gateway integration: start `dlc-api-gateway`, IAM and the owner APIs on the `platform`
-network, copy `deploy/auth-config.example.json` with the stage's `IAM_JWT_ISSUER` and
-`IAM_JWT_AUDIENCE`, then:
-
-```sh
-AUTH_CONFIG_FILE=/path/auth-config.json \
-  docker compose -f deploy/compose.yml -f deploy/compose.gateway.yml up --build -d
-```
 
 With `auth-config.json` present the shell uses the real Auth adapter. IAM's `IAM_AUTH_ALLOWED_ORIGIN` and the gateway's `GATEWAY_ALLOWED_ORIGIN`
 must both be the front origin (default `http://localhost:8080`).

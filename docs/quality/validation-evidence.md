@@ -1280,3 +1280,26 @@ width; the mockup chip itself overflows the 1280 px page edge.
 - **Annex H differences:** none.
 - **Limitation:** the base compose still has the Prism mock profile and the `-demo` portal
   releases in `fixtures/portal-registry.json`; they are removed in the next increments.
+
+## DEV-FRONT-NO-DEMO-COMPOSE-001
+
+- **Story:** HU-IAM-001 (`code-corhuila/dlc-docs#47`); issue #1. Project-owner direction: real
+  integration, no demo data or doubles.
+- **Change:**
+  - `deploy/compose.yml`: `GATEWAY_UPSTREAM` defaults to `http://dlc-api-gateway:8080/api/v1`;
+    `AUTH_CONFIG_FILE` is required and mounted as `auth-config.json`; the Prism `mock-gateway`
+    service and its `mock` profile are removed. `deploy/compose.gateway.yml` is no longer needed
+    and is deleted.
+  - `.env.example`: real Gateway upstream, `AUTH_CONFIG_FILE`; no mock or `DLC_DOCS_OPENAPI`.
+  - `README.md`: Docker deployment against the real Gateway; demo instructions removed.
+- **TDD:** configuration change. `tests/scripts/gateway-deployment.test.mjs` now requires the real
+  upstream and Auth data and forbids the mock; run against the previous `compose.yml` and
+  `.env.example` it fails (2 failures), and passes with this change.
+- **Validation:** typecheck, lint, format check, tests, `git diff --check` pass.
+  `docker compose -f deploy/compose.yml config` resolves the real upstream and the Auth data
+  mount, and refuses to start without `AUTH_CONFIG_FILE`.
+- **FC cases:** C06 Gateway path by default.
+- **Annex H differences:** none.
+- **Limitation:** portal upstream defaults and networks still use the names published by the
+  portal repositories (`*-portal-demo`); `fixtures/portal-registry.json` lists their `-demo`
+  releases until the portals publish real ones.

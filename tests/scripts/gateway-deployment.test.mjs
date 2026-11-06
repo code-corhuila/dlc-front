@@ -41,12 +41,28 @@ test('the compositor joins the platform network where the real Gateway runs', as
   );
 });
 
-test('the environment example documents the real Gateway upstream', async () => {
+test('the environment example defaults to the real Gateway upstream', async () => {
   const envExample = await readRepositoryFile('.env.example');
 
   assert.match(envExample, /^PLATFORM_NETWORK=platform$/m);
   assert.match(
     envExample,
-    /^# GATEWAY_UPSTREAM=http:\/\/dlc-api-gateway:8080\/api\/v1$/m,
+    /^GATEWAY_UPSTREAM=http:\/\/dlc-api-gateway:8080\/api\/v1$/m,
   );
+  assert.match(envExample, /^AUTH_CONFIG_FILE=/m);
+  assert.doesNotMatch(envExample, /mock-gateway|DLC_DOCS_OPENAPI/);
+});
+
+test('the compose deployment uses the real Gateway and requires Auth data, no mock', async () => {
+  const compose = await readRepositoryFile('deploy/compose.yml');
+
+  assert.match(
+    compose,
+    /GATEWAY_UPSTREAM: \$\{GATEWAY_UPSTREAM:-http:\/\/dlc-api-gateway:8080\/api\/v1\}/,
+  );
+  assert.match(
+    compose,
+    /\$\{AUTH_CONFIG_FILE:\?[^}]+\}:\/usr\/share\/nginx\/auth\/auth-config\.json:ro/,
+  );
+  assert.doesNotMatch(compose, /mock-gateway|prism|profiles:/);
 });

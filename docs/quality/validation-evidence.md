@@ -1057,3 +1057,34 @@ width; the mockup chip itself overflows the 1280 px page edge.
 - **Limitation:** `dlc-session-control-v1` generation/blocked marker, BroadcastChannel
   `dlc-session-v1`, `retryRestore`, ending the session on renewal 401 and expiry handling remain
   for FC-11/FC-12.
+
+## DEV-FRONT-AUTH-BLOCK-001
+
+- **Story:** HU-IAM-001 (`code-corhuila/dlc-docs#47`); issue #1. FC-11 ("protected 401, expiry,
+  logout outage") and the stale-generation part of FC-12.
+- **Change:**
+  - `src/core/session/sessionControl.ts`: the shared record `dlc-session-control-v1` holds only
+    `{generation, blocked}`; absent means generation 0, invalid data or refused storage fails
+    closed (`null`). `advance` writes the next generation and posts only `{generation, kind}` on
+    BroadcastChannel `dlc-session-v1`.
+  - `src/core/session/authAdapter.ts`: a blocked or invalid marker suppresses restore and renewal
+    without network. Successful login clears the block and announces `established`; logout
+    blocks and announces `cleared` before Auth is called, so an outage keeps the block across
+    reloads. A renewal 401 ends the session (block plus `onSessionEnded`) and is never replayed.
+    New `block()` records a protected 401 under the lock. A rotation finishing after the
+    generation changed is discarded.
+  - `src/core/session/session.ts`: optional `block` in `AuthPort`.
+  - `src/main.ts`: wires `localStorage`, `BroadcastChannel`, `onSessionEnded` and calls
+    `auth.block()` on a protected 401.
+- **TDD:** `tests/core/session/sessionControl.test.mjs` (4) and `authBlock.test.mjs` (10) failed
+  first with `ERR_MODULE_NOT_FOUND` for `sessionControl.ts`; all pass after the change. Shared
+  doubles live in `tests/core/session/controlDoubles.mjs`.
+- **Validation:** typecheck, lint, format check, tests (192), coverage (99.44 % lines, 91.16 %
+  branches), build and `git diff --check` pass. Size 172/400.
+- **Browser check (preview):** with a temporary `auth-config.json` and the record
+  `{"generation":3,"blocked":true}`, reloading `/app/dashboard` makes no `/api/v1` request, the
+  record is unchanged and the shell routes to `/login` as anonymous. Test data removed afterwards.
+- **FC cases:** FC-11 at adapter level; FC-12 stale rotation only.
+- **Annex H differences:** none.
+- **Limitation:** listening to `dlc-session-v1`/storage events in other tabs, expiry handling,
+  `retryRestore` and the "server logout unconfirmed" screen remain for the next increment.

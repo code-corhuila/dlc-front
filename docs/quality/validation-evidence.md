@@ -1303,3 +1303,18 @@ width; the mockup chip itself overflows the 1280 px page edge.
 - **Limitation:** portal upstream defaults and networks still use the names published by the
   portal repositories (`*-portal-demo`); `fixtures/portal-registry.json` lists their `-demo`
   releases until the portals publish real ones.
+
+## DEV-FRONT-NO-DEMO-SCOPE-001
+
+- **Story:** HU-IAM-001 (`code-corhuila/dlc-docs#47`); issue #1. Project-owner direction
+  (2026-11-06): real integration and final delivery.
+- **Change:**
+  - `docs/spec/dlc-front-spec.md`: the stage is real integration; FR-06 is the real Auth adapter
+    (FC-09 to FC-12) instead of the development double; FR-12 deploys against the real Gateway;
+    status, decisions, next increments and Definition of Done updated; the development sign-in
+    and the demo "Historia clínica" decision are removed.
+  - `docs/demo/clinical-dashboard-demo.md` and `docs/demo/patient-portal-integration.md`
+    removed: they described the demo data, personas and doubles that no longer exist.
+- **TDD:** documentation change; verified with `npm run format:check` and `git diff --check`.
+- **Limitation:** `fixtures/portal-registry.json` still lists `-demo` portal releases until the
+  portals publish real ones.

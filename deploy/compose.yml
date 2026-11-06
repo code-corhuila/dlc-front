@@ -1,4 +1,5 @@
-# Front-only demo: the compositor plus the portal containers started from their repositories.
+# Compositor deployment: proxies /api/v1 to the real dlc-api-gateway on the platform network and
+# the portal containers started from their repositories. Requires AUTH_CONFIG_FILE (C05).
 name: dlc-front
 
 services:
@@ -13,9 +14,8 @@ services:
       CLINICAL_UPSTREAM: ${CLINICAL_UPSTREAM:-http://clinical-portal-demo}
       APPOINTMENTS_UPSTREAM: ${APPOINTMENTS_UPSTREAM:-http://appointments-portal-demo}
       BILLING_UPSTREAM: ${BILLING_UPSTREAM:-http://billing-portal-demo}
-      # Base that replaces /api/v1: the mock serves paths at its root; a real Gateway keeps /api/v1
-      # (http://dlc-api-gateway:8080/api/v1 on the platform network).
-      GATEWAY_UPSTREAM: ${GATEWAY_UPSTREAM:-http://mock-gateway:4010}
+      # The compositor strips /api/v1 before proxying, so the Gateway base keeps it.
+      GATEWAY_UPSTREAM: ${GATEWAY_UPSTREAM:-http://dlc-api-gateway:8080/api/v1}
     restart: unless-stopped
     healthcheck:
       test: ['CMD', 'wget', '-q', '-O', '/dev/null', 'http://127.0.0.1/healthz']
@@ -26,8 +26,10 @@ services:
     ports:
       - '${FRONT_PORT:-8080}:80'
     volumes:
-      # Demo deployment data (develop only): registry, C02 test doubles, dev Auth double.
+      # Deployment data: the portal registry.
       - ../fixtures:/usr/share/nginx/deployment:ro
+      # {issuer, audience} matching IAM_JWT_ISSUER and IAM_JWT_AUDIENCE of the same stage.
+      - ${AUTH_CONFIG_FILE:?Set AUTH_CONFIG_FILE to this stage's auth-config.json}:/usr/share/nginx/auth/auth-config.json:ro
     networks:
       - default
       - clinical
@@ -35,18 +37,6 @@ services:
       - billing
       - patient
       - platform
-
-  # Demo-only Gateway mock generated from the dlc-docs OpenAPI contracts (read-only mount,
-  # nothing is copied). Start with: docker compose -f deploy/compose.yml --profile mock up -d
-  mock-gateway:
-    container_name: dlc-mock-gateway
-    image: stoplight/prism:5@sha256:3f6d29e31bfe0b99587f0f6f79c423858dd6a2ea7e1e4658273ed930a78a9acf
-    profiles: ['mock']
-    command:
-      ['mock', '-h', '0.0.0.0', '-m', 'false', '/openapi/api-gateway.yaml']
-    volumes:
-      - ${DLC_DOCS_OPENAPI:-../../../../dlc-docs/dlc-docs/07-api/contracts/openapi}:/openapi:ro
-    restart: unless-stopped
 
 networks:
   # Created by the independently deployed Patients portal.

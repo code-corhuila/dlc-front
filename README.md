@@ -59,7 +59,7 @@ Requirements: Node 24.12+ and Docker.
 ```sh
 npm ci
 npm run build
-npm run preview          # http://localhost:4180, Clinical demo expected on :4175
+npm run preview          # http://localhost:4180, real Clinical portal expected on :4173
 ```
 
 Docker deployment: start `dlc-api-gateway`, IAM and the owner APIs on the `platform` network

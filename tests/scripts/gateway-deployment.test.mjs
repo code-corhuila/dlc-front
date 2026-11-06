@@ -68,10 +68,16 @@ test('the compose deployment uses the real Gateway and requires Auth data, no mo
 });
 
 test('the opt-in Clinical registry changes only the Clinical release', async () => {
-  const defaultRegistry = JSON.parse(await readRepositoryFile('fixtures/portal-registry.json'));
-  const liveRegistry = JSON.parse(await readRepositoryFile('fixtures/portal-registry.clinical-live.json'));
+  const defaultRegistry = JSON.parse(
+    await readRepositoryFile('fixtures/portal-registry.json'),
+  );
+  const liveRegistry = JSON.parse(
+    await readRepositoryFile('fixtures/portal-registry.clinical-live.json'),
+  );
   const compose = await readRepositoryFile('deploy/compose.yml');
-  const clinical = liveRegistry.portals.find((portal) => portal.portalId === 'clinical');
+  const clinical = liveRegistry.portals.find(
+    (portal) => portal.portalId === 'clinical',
+  );
 
   assert.ok(clinical);
   assert.equal(clinical.release, '0.1.0');
@@ -80,5 +86,8 @@ test('the opt-in Clinical registry changes only the Clinical release', async () 
     liveRegistry.portals.filter((portal) => portal.portalId !== 'clinical'),
     defaultRegistry.portals.filter((portal) => portal.portalId !== 'clinical'),
   );
-  assert.match(compose, /\$\{PORTAL_REGISTRY_FILE:-\.\.\/fixtures\/portal-registry\.json\}/);
+  assert.match(
+    compose,
+    /\$\{PORTAL_REGISTRY_FILE:-\.\.\/fixtures\/portal-registry\.json\}/,
+  );
 });

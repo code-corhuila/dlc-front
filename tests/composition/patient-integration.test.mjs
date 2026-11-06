@@ -32,7 +32,7 @@ test('C01/C04: register Patients and preserve administrative routes and the Clin
   assert.equal(patient.navigation[0].path, '/app/patients');
 
   for (const [portalId, release] of [
-    ['clinical', '0.1.0-demo'],
+    ['clinical', '0.1.0'],
     ['appointments', '2.1.0'],
   ]) {
     assert.equal(

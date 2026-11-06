@@ -40,7 +40,7 @@ async function proxy(origin, path, method, response) {
 export function createPreviewServer({
   iamOrigin = process.env.IAM_ORIGIN ?? 'http://127.0.0.1:4202',
   patientOrigin = process.env.PATIENT_ORIGIN ?? 'http://127.0.0.1:4177',
-  clinicalOrigin = process.env.CLINICAL_ORIGIN ?? 'http://localhost:4175',
+  clinicalOrigin = process.env.CLINICAL_ORIGIN ?? 'http://localhost:4173',
   billingOrigin = process.env.BILLING_ORIGIN ?? 'http://localhost:4204',
 } = {}) {
   return createServer(async (request, response) => {

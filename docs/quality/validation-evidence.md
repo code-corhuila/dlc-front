@@ -1361,3 +1361,22 @@ width; the mockup chip itself overflows the 1280 px page edge.
 - **FC cases:** C01 registry, C04 portal proxy.
 - **Annex H differences:** none.
 - **Limitation:** `clinical` remains `0.1.0-demo` until its portal publishes a real release.
+
+## DEV-FRONT-CLINICAL-REAL-001
+
+- **Story:** HU-IAM-001 (`code-corhuila/dlc-docs#47`); issue #1. Next increment 1 of the spec:
+  register the real portal releases.
+- **Change:**
+  - `fixtures/portal-registry.json`: Clinical release `0.1.0` at
+    `/portals/clinical/0.1.0/entry.js`, the real build of `dlc-clinical-portal`
+    (`code-corhuila/dlc-clinical-portal#132` removes its demo build).
+  - `deploy/compose.yml` and `.env.example`: `CLINICAL_UPSTREAM` defaults to the
+    `clinical-portal-dlc-front` container; `scripts/preview.mjs`, `.env.example` and the README
+    use its port `4173` instead of the demo port `4175`.
+- **TDD:** genuine RED: the new `tests/scripts/clinical-deployment.test.mjs` failed on the
+  `0.1.0-demo` release, the `clinical-portal-demo` upstream and the `4175` origin. Two
+  registry tests that pinned Clinical to `0.1.0-demo` now expect `0.1.0`.
+- **Validation:** typecheck, lint, format, `npm run test:coverage` (214 tests, 99.47 % of lines),
+  build, `git diff --check` and the size gate (16/400).
+- **Limitation:** IAM still lists `0.1.0-local`; `fixtures/portal-registry.clinical-live.json`
+  now duplicates the default registry for Clinical.

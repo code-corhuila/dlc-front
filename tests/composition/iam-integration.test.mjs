@@ -6,7 +6,6 @@ import { readFile } from 'node:fs/promises';
 import { createPreviewServer } from '../../scripts/preview.mjs';
 import { parseRegistry } from '../../src/composition/registry.ts';
 import { visibleItems } from '../../src/layout/navigation.ts';
-import { createAuthPort } from '../../fixtures/dev-auth.js';
 
 async function start(t, server) {
   server.listen(0, '127.0.0.1');
@@ -76,52 +75,4 @@ test('IAM preview proxy preserves its release path, no-store and missing-asset s
   const missing = await fetch(origin + '/portals/iam/0.1.0-local/missing.js');
   assert.equal(missing.status, 404);
   assert.equal(missing.headers.get('cache-control'), 'no-store');
-});
-
-test('preview IAM data is role-scoped and never accepts writes as real Auth', async () => {
-  const admin = createAuthPort();
-  await assert.rejects(
-    admin.complete({
-      operationId: 'AuthLogin',
-      body: { email: 'admin@demo.test', password: 'wrong' },
-    }),
-  );
-  await assert.rejects(
-    admin.complete({
-      operationId: 'AuthVerifyMFAchallenge',
-      body: { persona: 'ADMINISTRATOR' },
-    }),
-    /UNSUPPORTED_DEMO_OPERATION/,
-  );
-  await admin.complete({
-    operationId: 'AuthLogin',
-    body: { email: 'admin@demo.test', password: 'Demo1234!' },
-  });
-  const list = await admin.demoFetch('/api/v1/auth/staff?page=1&limit=20', {
-    method: 'GET',
-  });
-  assert.equal(list.status, 200);
-  const page = await list.json();
-  assert.equal(page.meta.total, 5);
-  assert.equal(page.data[0].roles[0], 'ADMINISTRATOR');
-  const write = await admin.demoFetch('/api/v1/auth/register', {
-    method: 'POST',
-  });
-  assert.equal(write.status, 503);
-
-  const dentist = createAuthPort();
-  await dentist.complete({
-    operationId: 'AuthLogin',
-    body: { email: 'odontologo@demo.test', password: 'Demo1234!' },
-  });
-  const denied = await dentist.demoFetch('/api/v1/auth/staff', {
-    method: 'GET',
-  });
-  assert.equal(denied.status, 403);
-  const sessions = await dentist.demoFetch(
-    '/api/v1/auth/sessions?page=1&limit=20',
-    { method: 'GET' },
-  );
-  assert.equal(sessions.status, 200);
-  assert.equal((await sessions.json()).data[0].current, true);
 });

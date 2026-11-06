@@ -81,6 +81,19 @@ These records are fictional and read-only; save and revoke actions report unavai
 For `npm run preview`, `IAM_ORIGIN` must point to an IAM asset server that serves the
 versioned path; the Angular standalone preview on port 4201 does not serve that module path.
 
+Real Gateway integration: start `dlc-api-gateway`, IAM and the owner APIs on the `platform`
+network, copy `deploy/auth-config.example.json` with the stage's `IAM_JWT_ISSUER` and
+`IAM_JWT_AUDIENCE`, then:
+
+```sh
+AUTH_CONFIG_FILE=/path/auth-config.json \
+  docker compose -f deploy/compose.yml -f deploy/compose.gateway.yml up --build -d
+```
+
+With `auth-config.json` present the shell uses the real Auth adapter and never loads the
+development double. IAM's `IAM_AUTH_ALLOWED_ORIGIN` and the gateway's `GATEWAY_ALLOWED_ORIGIN`
+must both be the front origin (default `http://localhost:8080`).
+
 ## Quality
 
 ```sh

@@ -1169,7 +1169,7 @@ width; the mockup chip itself overflows the 1280 px page edge.
   `ERR_MODULE_NOT_FOUND`; all pass after the change. The container defect was found in the
   browser check (notice absent after reload with the marker set) and fixed before the PR.
 - **Validation:** typecheck, lint, format check, tests (207), coverage, build and
-  `git diff --check` pass. Size within limit.
+  `git diff --check` pass. Size 66/400.
 - **Browser check (preview):** with the marker set, reloading `/` shows the notice; navigating to
   `/login` keeps it; "Reintentar cierre de sesión" (development double confirms logout) removes
   the notice and the marker. The frame layout is unchanged.

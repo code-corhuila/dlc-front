@@ -263,3 +263,22 @@ test('C06: 204 and responseType none return null; blob returns a Blob', async ()
   });
   assert.ok(blob.data instanceof Blob);
 });
+
+test('FC-10: protected requests wait for the renewed access token before dispatch', async () => {
+  const t = transport(reply(200, { data: [] }));
+  let renewed = false;
+  const { http } = client(t, {
+    accessToken: async () => {
+      await new Promise((r) => setTimeout(r, 5));
+      renewed = true;
+      return 'token-2';
+    },
+  });
+  const result = await http.request({
+    method: 'GET',
+    path: '/api/v1/patients',
+  });
+  assert.equal(result.ok, true);
+  assert.equal(renewed, true);
+  assert.equal(t.calls[0].init.headers.authorization, 'Bearer token-2');
+});

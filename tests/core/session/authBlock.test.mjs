@@ -170,3 +170,10 @@ test('FC-12: renewal is not attempted once another tab blocked the session', asy
   assert.equal(await port.freshAccessToken(), null);
   assert.equal(calls.length, before);
 });
+
+test('FC-11: the adapter reports whether automatic restoration is blocked', async () => {
+  const blocked = setup({}, { record: '{"generation":2,"blocked":true}' });
+  assert.equal(blocked.port.isBlocked(), true);
+  assert.equal(setup({}, { record: 'bad' }).port.isBlocked(), true);
+  assert.equal(setup({}).port.isBlocked(), false);
+});

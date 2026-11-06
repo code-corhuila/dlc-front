@@ -174,3 +174,35 @@ test('C02/C05: scoped capability is read-only and released with the mount', asyn
   assert.deepEqual(seen, ['resolving']);
   assert.throws(() => scoped.getSnapshot(), /CANCELLED/);
 });
+
+test('C05: retryRestore resolves the C06 Result with the sanitized snapshot', async () => {
+  const session = createSession(auth({ restore: dentist }));
+  const result = await session.retryRestore();
+  assert.equal(result.ok, true);
+  assert.equal(result.status, 200);
+  assert.equal(result.data, session.getSnapshot());
+  assert.equal(result.data.state, 'authenticated');
+});
+
+test('FC-11: a blocked retryRestore fails locally without asking Auth', async () => {
+  const port = { ...auth({ restore: dentist }), isBlocked: () => true };
+  const session = createSession(port);
+  const result = await session.retryRestore();
+  assert.deepEqual(result, {
+    ok: false,
+    status: 0,
+    error: 'SESSION_UNAVAILABLE',
+  });
+  assert.deepEqual(port.calls, []);
+});
+
+test('C05: retryRestore reports an unavailable Auth as SESSION_UNAVAILABLE', async () => {
+  const session = createSession(auth({ restore: new Error('down') }));
+  const result = await session.retryRestore();
+  assert.deepEqual(result, {
+    ok: false,
+    status: 0,
+    error: 'SESSION_UNAVAILABLE',
+  });
+  assert.equal(session.getSnapshot().state, 'unavailable');
+});

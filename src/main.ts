@@ -10,6 +10,7 @@ import {
 } from './core/session/session.ts';
 import { createAuthAdapter } from './core/session/authAdapter.ts';
 import { loadAuthConfig } from './core/session/authConfig.ts';
+import { createLogoutMarker } from './core/session/logoutMarker.ts';
 import {
   CHANNEL_NAME,
   CONTROL_KEY,
@@ -135,17 +136,38 @@ async function boot() {
   });
   await session.start();
 
+  // The shell owns only this container; shell notices on body survive frame swaps.
+  const appRoot = document.createElement('div');
+  appRoot.style.display = 'contents';
+  document.body.prepend(appRoot);
+
   // C05/FC-11: local sign-out is immediate; an unconfirmed revocation stays visible with
   // an explicit retry until Auth confirms it. Nothing is retried automatically.
+  // The per-tab marker keeps the notice across reloads until confirmed or a new sign-in.
+  const logoutMarker = createLogoutMarker(sessionStorage);
   let logoutNotice: HTMLElement | null = null;
-  async function logout() {
+  const hideLogoutNotice = () => {
     logoutNotice?.remove();
     logoutNotice = null;
-    const result = await session.logout();
-    if (result.ok) return;
+  };
+  const showLogoutNotice = () => {
+    hideLogoutNotice();
     logoutNotice = renderLogoutUnconfirmed(document, () => void logout());
     document.body.append(logoutNotice);
+  };
+  async function logout() {
+    hideLogoutNotice();
+    const result = await session.logout();
+    if (result.ok) return logoutMarker.clear();
+    logoutMarker.mark();
+    showLogoutNotice();
   }
+  session.subscribe(({ state }) => {
+    if (state !== 'authenticated') return;
+    logoutMarker.clear();
+    hideLogoutNotice();
+  });
+  if (logoutMarker.pending()) showLogoutNotice();
 
   const navigation = registry.ok ? orderNavigation(registry.navigation) : [];
   const currentUser = () => {
@@ -165,7 +187,7 @@ async function boot() {
   });
   if (!registry.ok) {
     // C07: frame plus registry-unavailable state; no arbitrary entries are loaded.
-    document.body.append(frame.root);
+    appRoot.append(frame.root);
     frame.host.replaceChildren(
       renderServiceError(document, 'REGISTRY_UNAVAILABLE', () =>
         location.reload(),
@@ -238,7 +260,7 @@ async function boot() {
   const shell = createShell({
     document,
     frames: { app: frame, public: renderPublicFrame(document) },
-    root: document.body,
+    root: appRoot,
     lifecycle,
     history: browserHistory(window),
     isAuthenticated: () => session.getSnapshot().state === 'authenticated',

@@ -1,6 +1,9 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { loadAuthConfig } from '../../../src/core/session/authConfig.ts';
+import {
+  loadAuthConfig,
+  UNCONFIGURED_AUTH,
+} from '../../../src/core/session/authConfig.ts';
 
 const reply = (status, body) => async (url, init) => {
   reply.last = { url, init };
@@ -51,4 +54,14 @@ test('C05: unreachable Auth data fails closed', async () => {
   ]) {
     assert.deepEqual(await loadAuthConfig({ fetch }), { status: 'invalid' });
   }
+});
+
+test('C05: without valid Auth deployment data the session fails closed, never a double', async () => {
+  await assert.rejects(UNCONFIGURED_AUTH.restore(), /AUTH_NOT_CONFIGURED/);
+  await assert.rejects(
+    UNCONFIGURED_AUTH.complete({ operationId: 'AuthLogin', body: {} }),
+    /AUTH_NOT_CONFIGURED/,
+  );
+  assert.equal(UNCONFIGURED_AUTH.accessToken, undefined);
+  assert.ok(Object.isFrozen(UNCONFIGURED_AUTH));
 });

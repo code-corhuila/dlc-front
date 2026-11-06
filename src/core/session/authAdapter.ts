@@ -12,8 +12,23 @@ export type AuthAdapterDeps = Readonly<{
   /** Deployment configuration: Tokens with another issuer/audience are rejected. */
   issuer: string;
   audience: string;
+  /** Web Locks (navigator.locks): serializes cookie operations across tabs (FC-10). */
+  locks: LockManagerLike;
   timeoutMs?: number;
+  lockTimeoutMs?: number;
 }>;
+
+export type LockManagerLike = Readonly<{
+  request: <T>(
+    name: string,
+    options: { mode: 'exclusive'; signal: AbortSignal },
+    callback: () => Promise<T>,
+  ) => Promise<T>;
+}>;
+
+const LOCK = 'dlc-auth-v1';
+/** Renew before a protected request when the token expires within this window (C05). */
+const RENEW_WINDOW_MS = 30_000;
 
 export type AuthErrorCode =
   | 'UNAUTHORIZED'
@@ -140,21 +155,61 @@ export function createAuthAdapter(deps: AuthAdapterDeps) {
     return proof;
   }
 
+  /** FC-10: one tab at a time may change the refresh cookie; waiting is bounded. */
+  async function exclusive<T>(operation: () => Promise<T>): Promise<T> {
+    const signal = AbortSignal.timeout(deps.lockTimeoutMs ?? 10_000);
+    let granted = false;
+    try {
+      return await deps.locks.request(
+        LOCK,
+        { mode: 'exclusive', signal },
+        () => {
+          granted = true;
+          return operation();
+        },
+      );
+    } catch (error) {
+      if (granted) throw error;
+      throw new AuthError('SESSION_UNAVAILABLE');
+    }
+  }
+
+  /** CSRF proof, then rotation; the access token survives only a successful rotation. */
+  async function rotate(): Promise<Establishment | null> {
+    try {
+      const proof = await csrfProof();
+      if (proof === null) return (access = null);
+      const response = await send('POST', '/refresh', {
+        'x-csrf-token': proof,
+      });
+      if (response.status === 401) return (access = null);
+      if (!response.ok) throw new AuthError('SESSION_UNAVAILABLE');
+      return await install(response);
+    } catch (error) {
+      access = null;
+      throw error;
+    }
+  }
+
+  // Single-flight within the tab: concurrent restores and renewals share one rotation.
+  let renewal: Promise<Establishment | null> | null = null;
+  const renew = () =>
+    (renewal ??= exclusive(rotate).finally(() => (renewal = null)));
+
   const port = {
     accessToken: () =>
       access && deps.now() < access.expiresAtMs ? access.token : null,
 
-    async restore(): Promise<Establishment | null> {
-      access = null;
-      const proof = await csrfProof();
-      if (proof === null) return null;
-      const response = await send('POST', '/refresh', {
-        'x-csrf-token': proof,
-      });
-      if (response.status === 401) return null;
-      if (!response.ok) throw new AuthError('SESSION_UNAVAILABLE');
-      return install(response);
+    /** Token for a protected request, renewed first when it expires within 30 s. */
+    async freshAccessToken(): Promise<string | null> {
+      if (!access) return null;
+      if (deps.now() < access.expiresAtMs - RENEW_WINDOW_MS)
+        return access.token;
+      await renew().catch(() => null);
+      return port.accessToken();
     },
+
+    restore: (): Promise<Establishment | null> => renew(),
 
     async complete(input: {
       operationId: string;
@@ -163,20 +218,26 @@ export function createAuthAdapter(deps: AuthAdapterDeps) {
       if (input.operationId !== 'AuthLogin')
         throw new AuthError('INVALID_REQUEST');
       access = null;
-      const response = await send('POST', '/login', {}, input.body);
-      // Generic failure: no account state, eligibility or history is disclosed.
-      if (response.status === 401) throw new AuthError('UNAUTHORIZED');
-      if (!response.ok) throw new AuthError('SESSION_UNAVAILABLE');
-      return install(response);
+      return exclusive(async () => {
+        const response = await send('POST', '/login', {}, input.body);
+        // Generic failure: no account state, eligibility or history is disclosed.
+        if (response.status === 401) throw new AuthError('UNAUTHORIZED');
+        if (!response.ok) throw new AuthError('SESSION_UNAVAILABLE');
+        return install(response);
+      });
     },
 
     /** Local access ends first; a failed revocation is reported, never claimed. */
     async logout(): Promise<void> {
       access = null;
-      const proof = await csrfProof();
-      if (proof === null) return;
-      const response = await send('POST', '/logout', { 'x-csrf-token': proof });
-      if (response.status !== 204) throw new AuthError('SESSION_UNAVAILABLE');
+      await exclusive(async () => {
+        const proof = await csrfProof();
+        if (proof === null) return;
+        const response = await send('POST', '/logout', {
+          'x-csrf-token': proof,
+        });
+        if (response.status !== 204) throw new AuthError('SESSION_UNAVAILABLE');
+      });
     },
   };
   return Object.freeze(port) satisfies AuthPort;

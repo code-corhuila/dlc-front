@@ -41,7 +41,7 @@ export type HttpClientDeps = Readonly<{
     init: RequestInit & { headers: Record<string, string> },
   ) => Promise<Response>;
   /** Private access token held by the session adapter; never handed to portals. */
-  accessToken: () => string | null;
+  accessToken: () => string | null | Promise<string | null>;
   /** C05: a protected 401 ends the browser session. */
   onUnauthorized: () => void;
   uuid: () => string;
@@ -108,7 +108,10 @@ export function createHttpClient(deps: HttpClientDeps) {
     });
     if (!target.ok || !METHODS.has(method))
       return fail(0, 'INVALID_REQUEST', 'contract');
-    const token = isPublic ? null : deps.accessToken();
+    // C05: renewal (if due) completes before dispatch; the request is not sent yet.
+    const token = isPublic ? null : await deps.accessToken();
+    // Cancelled while waiting for renewal: nothing is dispatched.
+    if (input.signal?.aborted) return fail(0, 'CANCELLED', 'cancelled');
     if (!isPublic && !token) return fail(0, 'SESSION_UNAVAILABLE', 'session');
 
     const headers: Record<string, string> = {

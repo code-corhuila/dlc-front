@@ -1025,3 +1025,35 @@ width; the mockup chip itself overflows the 1280 px page edge.
 - **Limitation:** no end-to-end login yet: it needs the real Gateway and IAM. The compose file does
   not provide `auth-config.json` until the Gateway exists. Multi-tab coordination (FC-10) remains
   pending.
+
+## DEV-FRONT-AUTH-TABS-001
+
+- **Story:** HU-IAM-001 (`code-corhuila/dlc-docs#47`); issue #1. FC-10 ("eligible cookie after
+  reload; two tabs renew").
+- **Change:**
+  - `src/core/session/authAdapter.ts`: every cookie operation (CSRF read plus refresh, login,
+    logout) runs under the exclusive Web Lock `dlc-auth-v1`; waiting longer than 10 s fails closed
+    with `SESSION_UNAVAILABLE` before any network attempt. Restores and renewals are single-flight
+    within a tab. New `freshAccessToken()` renews before a protected request when the token
+    expires within 30 s; a failed renewal returns no token. No token is broadcast between tabs.
+  - `src/core/http/client.ts`: the access token may be asynchronous; renewal completes before
+    dispatch, and a request cancelled while waiting is never sent (`CANCELLED`).
+  - `src/core/session/session.ts`: optional `freshAccessToken` in `AuthPort`.
+  - `src/main.ts`: passes `navigator.locks` and uses `freshAccessToken` for protected requests.
+- **TDD:** `tests/core/session/authTabs.test.mjs` (8 tests: lock name and mode, two tabs never
+  refresh concurrently, single-flight, lock timeout, renewal window, no session, failed renewal)
+  and the client test "protected requests wait for the renewed access token" failed first (8 and 1
+  failures). After the change, the existing FC-14 cancel case exposed that a request aborted while
+  awaiting the token was still dispatched; the client now returns `CANCELLED` before dispatch.
+- **Validation:** typecheck, lint, format check, tests (178), coverage (99.48 % lines, 91.01 %
+  branches), build and `git diff --check` pass. Size 113/400.
+- **Browser check (preview):** with a temporary `auth-config.json` (not committed), the shell
+  restores through the real adapter, shows "Servicio de autenticación no disponible" (no Gateway in
+  preview) and `navigator.locks.query()` reports no held or pending lock afterwards. Without the
+  file, the development double loads as before.
+- **FC cases:** FC-10 covered at adapter and client level; real two-tab refresh against IAM needs
+  the Gateway.
+- **Annex H differences:** none.
+- **Limitation:** `dlc-session-control-v1` generation/blocked marker, BroadcastChannel
+  `dlc-session-v1`, `retryRestore`, ending the session on renewal 401 and expiry handling remain
+  for FC-11/FC-12.

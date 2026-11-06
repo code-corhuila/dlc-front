@@ -31,6 +31,8 @@ export type Establishment = Readonly<{
 export type AuthPort = Readonly<{
   /** Private access token for the HTTP client only; never part of a snapshot (C05). */
   accessToken?: () => string | null;
+  /** Same token, renewed first when it expires within 30 s (C05, FC-10). */
+  freshAccessToken?: () => Promise<string | null>;
   restore: () => Promise<Establishment | null>;
   complete: (input: {
     operationId: string;

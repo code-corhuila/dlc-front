@@ -43,6 +43,7 @@ async function loadAuthPort(): Promise<PreviewAuthPort> {
       now: () => Date.now(),
       issuer: config.issuer,
       audience: config.audience,
+      locks: navigator.locks,
     });
   if (config.status === 'invalid') return unavailableAuth;
   try {
@@ -116,9 +117,11 @@ async function boot() {
     fetch: (url, init) => auth.demoFetch?.(url, init) ?? fetch(url, init),
     // The Auth adapter holds the access token privately; portals never see it (C05).
     accessToken: () =>
-      session.getSnapshot().state === 'authenticated'
-        ? (auth.accessToken?.() ?? null)
-        : null,
+      session.getSnapshot().state !== 'authenticated'
+        ? null
+        : auth.freshAccessToken
+          ? auth.freshAccessToken()
+          : (auth.accessToken?.() ?? null),
     onUnauthorized: () => session.invalidate('UNAUTHORIZED'),
     uuid: () => crypto.randomUUID(),
   });

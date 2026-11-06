@@ -12,8 +12,10 @@ import { createAuthAdapter } from './core/session/authAdapter.ts';
 import { loadAuthConfig } from './core/session/authConfig.ts';
 import {
   CHANNEL_NAME,
+  CONTROL_KEY,
   createSessionControl,
 } from './core/session/sessionControl.ts';
+import type { Establishment } from './core/session/session.ts';
 import { createHttpCapability } from './core/http/capability.ts';
 import { createHttpClient, type HttpClientDeps } from './core/http/client.ts';
 import { createTelemetry } from './core/telemetry/telemetry.ts';
@@ -23,7 +25,16 @@ import { renderServiceError, renderUpdateBanner } from './layout/pages.ts';
 import { renderPublicFrame } from './layout/publicFrame.ts';
 
 const NO_USER = { id: '', name: '', roles: [], permissions: [] };
-type PreviewAuthPort = AuthPort & { demoFetch?: HttpClientDeps['fetch'] };
+type PreviewAuthPort = AuthPort & {
+  demoFetch?: HttpClientDeps['fetch'];
+  remote?: (message: unknown) => 'established' | 'cleared' | null;
+  remoteRecord?: (raw: string | null) => 'established' | 'cleared' | null;
+};
+type AuthHooks = Readonly<{
+  ended: () => void;
+  renewed: (est: Establishment) => void;
+  changed: (kind: 'established' | 'cleared' | null | undefined) => void;
+}>;
 
 /** Without Auth deployment data or the dev double, the session is unavailable. */
 const unavailableAuth: PreviewAuthPort = {
@@ -36,14 +47,13 @@ const unavailableAuth: PreviewAuthPort = {
  * C05: deployments with /auth-config.json use the real Auth adapter; malformed data fails
  * closed. Only when it is absent may the local preview load its development double.
  */
-async function loadAuthPort(
-  onSessionEnded: () => void,
-): Promise<PreviewAuthPort> {
+async function loadAuthPort(hooks: AuthHooks): Promise<PreviewAuthPort> {
   const config = await loadAuthConfig({
     fetch: (url, init) => fetch(url, init),
   });
-  if (config.status === 'configured')
-    return createAuthAdapter({
+  if (config.status === 'configured') {
+    const channel = new BroadcastChannel(CHANNEL_NAME);
+    const adapter = createAuthAdapter({
       fetch: (url, init) => fetch(url, init),
       uuid: () => crypto.randomUUID(),
       now: () => Date.now(),
@@ -56,10 +66,19 @@ async function loadAuthPort(
           getItem: (key) => localStorage.getItem(key),
           setItem: (key, value) => localStorage.setItem(key, value),
         },
-        channel: new BroadcastChannel(CHANNEL_NAME),
+        channel,
       }),
-      onSessionEnded,
+      onSessionEnded: hooks.ended,
+      onRenewed: hooks.renewed,
     });
+    // FC-12: other tabs announce only {generation, kind}; storage events also notify.
+    channel.onmessage = (event) => hooks.changed(adapter.remote(event.data));
+    addEventListener('storage', (event) => {
+      if (event.key === CONTROL_KEY)
+        hooks.changed(adapter.remoteRecord(event.newValue));
+    });
+    return adapter;
+  }
   if (config.status === 'invalid') return unavailableAuth;
   try {
     const url = '/dev-auth.js';
@@ -93,9 +112,23 @@ async function boot() {
   });
   const [registry, auth] = await Promise.all([
     loader.registry(),
-    loadAuthPort(() => session.invalidate('UNAUTHORIZED')),
+    loadAuthPort({
+      ended: () => session.invalidate('UNAUTHORIZED'),
+      renewed: (est) => session.renewed(est),
+      // Cleared elsewhere: clean up here; established elsewhere: serialized restore.
+      changed: (kind) => {
+        if (kind === 'cleared') session.invalidate('LOGOUT');
+        if (kind === 'established') void session.start();
+      },
+    }),
   ]);
-  const session = createSession(auth);
+  const session = createSession(auth, {
+    expiry: {
+      now: () => Date.now(),
+      setTimer: (fn, ms) => setTimeout(fn, ms),
+      clearTimer: (timer) => clearTimeout(timer as number),
+    },
+  });
   await session.start();
 
   const navigation = registry.ok ? orderNavigation(registry.navigation) : [];

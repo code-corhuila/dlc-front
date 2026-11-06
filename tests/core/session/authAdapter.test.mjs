@@ -62,6 +62,8 @@ function adapter(routes, options = {}) {
     now: () => clock,
     issuer: ISSUER,
     audience: AUDIENCE,
+    // Single-tab tests: an uncontended lock grants immediately.
+    locks: { request: (_name, _options, callback) => callback() },
     ...options,
   });
   return { port, net, advance: (ms) => (clock += ms) };

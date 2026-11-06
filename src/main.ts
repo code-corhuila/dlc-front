@@ -8,6 +8,8 @@ import {
   scopeSession,
   type AuthPort,
 } from './core/session/session.ts';
+import { createAuthAdapter } from './core/session/authAdapter.ts';
+import { loadAuthConfig } from './core/session/authConfig.ts';
 import { createHttpCapability } from './core/http/capability.ts';
 import { createHttpClient, type HttpClientDeps } from './core/http/client.ts';
 import { createTelemetry } from './core/telemetry/telemetry.ts';
@@ -19,15 +21,30 @@ import { renderPublicFrame } from './layout/publicFrame.ts';
 const NO_USER = { id: '', name: '', roles: [], permissions: [] };
 type PreviewAuthPort = AuthPort & { demoFetch?: HttpClientDeps['fetch'] };
 
-/** Until the Auth adapter exists, a deployment without the dev double is unavailable. */
+/** Without Auth deployment data or the dev double, the session is unavailable. */
 const unavailableAuth: PreviewAuthPort = {
   restore: () => Promise.reject(new Error('AUTH_NOT_CONFIGURED')),
   complete: () => Promise.reject(new Error('AUTH_NOT_CONFIGURED')),
   logout: () => Promise.resolve(),
 };
 
-/** The development Auth double is served only by the local preview (fixtures/). */
+/**
+ * C05: deployments with /auth-config.json use the real Auth adapter; malformed data fails
+ * closed. Only when it is absent may the local preview load its development double.
+ */
 async function loadAuthPort(): Promise<PreviewAuthPort> {
+  const config = await loadAuthConfig({
+    fetch: (url, init) => fetch(url, init),
+  });
+  if (config.status === 'configured')
+    return createAuthAdapter({
+      fetch: (url, init) => fetch(url, init),
+      uuid: () => crypto.randomUUID(),
+      now: () => Date.now(),
+      issuer: config.issuer,
+      audience: config.audience,
+    });
+  if (config.status === 'invalid') return unavailableAuth;
   try {
     const url = '/dev-auth.js';
     const module = (await import(url)) as {

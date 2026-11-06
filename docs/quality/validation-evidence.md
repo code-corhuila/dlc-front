@@ -1178,3 +1178,45 @@ width; the mockup chip itself overflows the 1280 px page edge.
   C05 restricts the shared record to `{generation, blocked}`.
 - **Limitation:** the notice is per tab; another tab of the same browser stays blocked but does
   not show it.
+
+## DEV-FRONT-GATEWAY-001
+
+- **Story:** HU-IAM-001 (`code-corhuila/dlc-docs#47`); issue #1. Wires the deployment (FR-12, C06)
+  to the real `dlc-api-gateway` at the project owner's request (2026-11-06). The mock Gateway
+  stays the demo default.
+- **Change:**
+  - `deploy/nginx.conf.template`: the `/api/v1` proxy sends
+    `X-Forwarded-For $proxy_add_x_forwarded_for`. The Gateway rate-limits per client
+    address and trusts that header only from this container (`GATEWAY_TRUSTED_PROXY`,
+    `code-corhuila/dlc-api-gateway#14`).
+  - `deploy/compose.yml`: `dlc-front` also joins the external `platform` network
+    (`PLATFORM_NETWORK`), where the Gateway runs as `dlc-api-gateway`.
+  - `.env.example`: `PLATFORM_NETWORK` and the real upstream
+    `GATEWAY_UPSTREAM=http://dlc-api-gateway:8080/api/v1` (the Gateway keeps `/api/v1`).
+- **TDD:** `tests/scripts/gateway-deployment.test.mjs` (3 tests) failed first against the
+  unchanged files (0/3: missing header, network and variable); all pass after the change. Two
+  defects of the test itself were fixed before recording RED: the service block regex and CRLF
+  working copies on Windows.
+- **Validation:** typecheck, lint, format check, tests (210), coverage (99.47 % lines,
+  91.70 % branches), build and `git diff --check` pass. Size 15/400.
+- **Deployment check (local, not a deployment):**
+  - Setup: `dlc-front` from this branch plus `dlc-api-gateway` `develop` (`672669a`) on
+    `platform`. The Gateway trusts the front address. Stand-in `auth-service` and
+    `patients-api` come from the Gateway smoke stubs. All requests entered through the front on
+    port 18082.
+  - Results, 7/7: `/api/v1/auth/jwks` reached the IAM stand-in with `/api/v1` preserved;
+    correlation id returned; `401 UNAUTHORIZED` without `Authorization`; caller
+    `X-User-Role` stripped; this browser limited after 10 logins; a forged
+    `X-Forwarded-For` did not reset it; another browser (another container behind the same
+    front) still logged in.
+  - Control: with the Gateway trusting no proxy, that other browser got `429`. Every user
+    would share one budget.
+- **FC cases:** none; deployment only (FR-12).
+- **Annex H differences:** none. Annex H rule 3 holds: only the container knows the Gateway
+  address.
+- **Limitations:**
+  - Starting the compositor now needs the `platform` network (`docker network create
+    platform`), like the other external networks.
+  - `GATEWAY_TRUSTED_PROXY` on the Gateway must be set to this container's `platform`
+    address by whoever assembles the platform (`-infra`).
+  - The real Auth adapter (FC-09, FC-10) is still pending.

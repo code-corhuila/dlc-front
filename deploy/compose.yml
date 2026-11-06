@@ -13,7 +13,8 @@ services:
       CLINICAL_UPSTREAM: ${CLINICAL_UPSTREAM:-http://clinical-portal-demo}
       APPOINTMENTS_UPSTREAM: ${APPOINTMENTS_UPSTREAM:-http://appointments-portal-demo}
       BILLING_UPSTREAM: ${BILLING_UPSTREAM:-http://billing-portal-demo}
-      # Base that replaces /api/v1: the mock serves paths at its root; a real Gateway keeps /api/v1.
+      # Base that replaces /api/v1: the mock serves paths at its root; a real Gateway keeps /api/v1
+      # (http://dlc-api-gateway:8080/api/v1 on the platform network).
       GATEWAY_UPSTREAM: ${GATEWAY_UPSTREAM:-http://mock-gateway:4010}
     restart: unless-stopped
     healthcheck:
@@ -33,6 +34,7 @@ services:
       - appointments
       - billing
       - patient
+      - platform
 
   # Demo-only Gateway mock generated from the dlc-docs OpenAPI contracts (read-only mount,
   # nothing is copied). Start with: docker compose -f deploy/compose.yml --profile mock up -d
@@ -65,3 +67,9 @@ networks:
   billing:
     external: true
     name: ${BILLING_NETWORK:-dlc-billing-portal_default}
+
+  # Shared network of the real Gateway and owner services (Annex G); create it once with
+  # `docker network create platform` if no other stack has.
+  platform:
+    external: true
+    name: ${PLATFORM_NETWORK:-platform}

@@ -21,7 +21,11 @@ import { createHttpClient, type HttpClientDeps } from './core/http/client.ts';
 import { createTelemetry } from './core/telemetry/telemetry.ts';
 import { renderFrame } from './layout/frame.ts';
 import { orderNavigation } from './layout/navigation.ts';
-import { renderServiceError, renderUpdateBanner } from './layout/pages.ts';
+import {
+  renderLogoutUnconfirmed,
+  renderServiceError,
+  renderUpdateBanner,
+} from './layout/pages.ts';
 import { renderPublicFrame } from './layout/publicFrame.ts';
 
 const NO_USER = { id: '', name: '', roles: [], permissions: [] };
@@ -131,6 +135,18 @@ async function boot() {
   });
   await session.start();
 
+  // C05/FC-11: local sign-out is immediate; an unconfirmed revocation stays visible with
+  // an explicit retry until Auth confirms it. Nothing is retried automatically.
+  let logoutNotice: HTMLElement | null = null;
+  async function logout() {
+    logoutNotice?.remove();
+    logoutNotice = null;
+    const result = await session.logout();
+    if (result.ok) return;
+    logoutNotice = renderLogoutUnconfirmed(document, () => void logout());
+    document.body.append(logoutNotice);
+  }
+
   const navigation = registry.ok ? orderNavigation(registry.navigation) : [];
   const currentUser = () => {
     const { user, permissions } = session.getSnapshot();
@@ -140,7 +156,7 @@ async function boot() {
     user: currentUser(),
     navigation,
     path: location.pathname,
-    onLogout: () => void session.logout(),
+    onLogout: () => void logout(),
     // The owner (Patients) interprets the query; the shell only routes it (C04).
     onSearch: (term) =>
       void shell.request({
@@ -213,7 +229,7 @@ async function boot() {
               iamSession: Object.freeze({
                 complete: session.complete,
                 logout: session.logout,
-                retryRestore: () => session.start(),
+                retryRestore: () => session.retryRestore(),
               }),
             }
           : {}),

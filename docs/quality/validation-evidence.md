@@ -995,3 +995,33 @@ width; the mockup chip itself overflows the 1280 px page edge.
 - **Limitation:** not wired into `main.ts` (needs issuer/audience deployment data). Web Lock
   `dlc-auth-v1`, BroadcastChannel `dlc-session-v1`, the `dlc-session-control-v1` blocked marker,
   renewal before expiry and `retryRestore` remain for the next increment.
+
+## DEV-FRONT-AUTH-WIRING-001
+
+- **Story:** HU-IAM-001 (`code-corhuila/dlc-docs#47`); issue #1. Follows
+  `DEV-FRONT-AUTH-ADAPTER-001`.
+- **Change:**
+  - `src/core/session/authConfig.ts`: reads `/auth-config.json` (`no-store`, same origin, 10 s)
+    with exactly `{issuer, audience}`. Results: `configured`, `absent` (404) or `invalid`
+    (malformed, extra keys, non-404 error, network failure).
+  - `src/main.ts`: `configured` builds the real C05 Auth adapter; `invalid` fails closed
+    (`AUTH_NOT_CONFIGURED`, session unavailable) and never loads the development double; only
+    `absent` keeps the local preview on `dev-auth.js`.
+  - `deploy/nginx.conf.template`: serves `/auth-config.json` from the deployment data mount with
+    `Cache-Control: no-store`; the front-only demo does not ship it.
+- **TDD:** `tests/core/session/authConfig.test.mjs` (4 tests) failed first with
+  `ERR_MODULE_NOT_FOUND` for `authConfig.ts`; all pass after the change.
+- **Validation:** typecheck, lint, format check, tests (169), coverage (99.47 % lines, 91.18 %
+  branches; `authConfig.ts` 100 %), build and `git diff --check` pass. Size 65/400.
+- **Browser check (preview, `npm run preview`):**
+  - Without `auth-config.json`: `GET /auth-config.json` 404, then `GET /dev-auth.js` 200; the
+    preview behaves as before.
+  - With a temporary `fixtures/auth-config.json` (not committed): `GET /auth-config.json` 200,
+    then `GET /api/v1/auth/csrf`; the preview has no Gateway and answers HTML, so the adapter
+    rejects it and the shell shows "Servicio de autenticación no disponible" with "Reintentar".
+    `dev-auth.js` is not requested.
+- **FC cases:** FC-09 path now reaches the real adapter when configured.
+- **Annex H differences:** none.
+- **Limitation:** no end-to-end login yet: it needs the real Gateway and IAM. The compose file does
+  not provide `auth-config.json` until the Gateway exists. Multi-tab coordination (FC-10) remains
+  pending.

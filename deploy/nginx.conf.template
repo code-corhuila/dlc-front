@@ -71,6 +71,13 @@ server {
     try_files $uri =404;
   }
 
+  # Real Auth deployment data (issuer, audience); absent in the front-only demo (C05).
+  location = /auth-config.json {
+    root /usr/share/nginx/deployment;
+    add_header Cache-Control "no-store" always;
+    try_files $uri =404;
+  }
+
   location = /dev-session.json {
     root /usr/share/nginx/deployment;
     add_header Cache-Control "no-store" always;

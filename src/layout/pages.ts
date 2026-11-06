@@ -208,6 +208,29 @@ export function markAvailable(notice: HTMLElement, onReload: () => void): void {
   button?.replaceWith(reload);
 }
 
+/** C05: a failed revocation is never claimed; the user may retry the server logout. */
+export function renderLogoutUnconfirmed(
+  document: Document,
+  onRetry: () => void,
+): HTMLElement {
+  const el = make(document);
+  const notice = el('div', 'dlc-update-banner');
+  notice.setAttribute('role', 'alert');
+  notice.dataset.code = 'LOGOUT_UNCONFIRMED';
+  const retry = el('button', 'dlc-button', 'Reintentar cierre de sesión');
+  retry.type = 'button';
+  retry.addEventListener('click', onRetry);
+  notice.append(
+    el(
+      'span',
+      '',
+      'Saliste de DI LUCCA en este navegador, pero no pudimos confirmar el cierre de sesión en el servidor.',
+    ),
+    retry,
+  );
+  return notice;
+}
+
 /** Shown when the published registry revision changes (new portal releases). */
 export function renderUpdateBanner(
   document: Document,

@@ -35,6 +35,8 @@ export type AuthPort = Readonly<{
   freshAccessToken?: () => Promise<string | null>;
   /** Protected 401: ends access and blocks automatic restoration across tabs (FC-11). */
   block?: () => Promise<void>;
+  /** True while the shared marker blocks automatic restoration (FC-11). */
+  isBlocked?: () => boolean;
   restore: () => Promise<Establishment | null>;
   complete: (input: {
     operationId: string;
@@ -135,6 +137,18 @@ export function createSession(
     );
   }
 
+  async function start() {
+    try {
+      const restored = await auth.restore();
+      if (restored === null) return publish('anonymous', 'NO_SESSION');
+      const est = sanitize(restored);
+      if (est) publish('authenticated', null, est);
+      else publish('unavailable', 'DEPENDENCY_UNAVAILABLE');
+    } catch {
+      publish('unavailable', 'DEPENDENCY_UNAVAILABLE');
+    }
+  }
+
   return {
     getSnapshot: () => snapshot,
     subscribe(listener: (s: SessionSnapshot) => void) {
@@ -142,16 +156,15 @@ export function createSession(
       notify(listener);
       return () => void listeners.delete(listener);
     },
-    async start() {
-      try {
-        const restored = await auth.restore();
-        if (restored === null) return publish('anonymous', 'NO_SESSION');
-        const est = sanitize(restored);
-        if (est) publish('authenticated', null, est);
-        else publish('unavailable', 'DEPENDENCY_UNAVAILABLE');
-      } catch {
-        publish('unavailable', 'DEPENDENCY_UNAVAILABLE');
-      }
+    start,
+    /** Explicit retry: C06 Result with the snapshot; blocked fails locally (C05). */
+    async retryRestore(): Promise<ControlResult> {
+      if (auth.isBlocked?.())
+        return { ok: false, status: 0, error: 'SESSION_UNAVAILABLE' };
+      await start();
+      return snapshot.state === 'unavailable'
+        ? { ok: false, status: 0, error: 'SESSION_UNAVAILABLE' }
+        : { ok: true, status: 200, data: snapshot };
     },
     /** IAM-only completion; the body is passed unchanged to the Auth adapter. */
     async complete(input: {

@@ -1150,3 +1150,31 @@ width; the mockup chip itself overflows the 1280 px page edge.
 - **Limitation:** after a reload the blocked marker cannot tell a confirmed from an unconfirmed
   logout (the record holds only `generation` and `blocked`), so the notice is shown only in the
   page where the logout failed.
+
+## DEV-FRONT-AUTH-LOGOUT-001
+
+- **Story:** HU-IAM-001 (`code-corhuila/dlc-docs#47`); issue #1. Closes the limitation of
+  `DEV-FRONT-AUTH-RECOVERY-001` (FC-11: "shows server logout unconfirmed" across reload).
+- **Change:**
+  - `src/core/session/logoutMarker.ts`: per-tab `sessionStorage` key
+    `dlc-logout-unconfirmed-v1` with the single value `1`; no identity, token or credential.
+    Unexpected values or refused storage never show the notice. The shared
+    `dlc-session-control-v1` record still holds only `{generation, blocked}` (C05).
+  - `src/main.ts`: a failed logout sets the marker and shows the notice; a confirmed logout or a
+    new authenticated session clears it; on load a pending marker shows the notice again.
+  - `src/main.ts`: the shell now owns a dedicated container (`display: contents`) instead of
+    `document.body`. Before, every frame swap replaced all body children and removed shell
+    notices (the logout notice of `DEV-FRONT-AUTH-RECOVERY-001` and the update banner).
+- **TDD:** `tests/core/session/logoutMarker.test.mjs` (3 tests) failed first with
+  `ERR_MODULE_NOT_FOUND`; all pass after the change. The container defect was found in the
+  browser check (notice absent after reload with the marker set) and fixed before the PR.
+- **Validation:** typecheck, lint, format check, tests (207), coverage, build and
+  `git diff --check` pass. Size 66/400.
+- **Browser check (preview):** with the marker set, reloading `/` shows the notice; navigating to
+  `/login` keeps it; "Reintentar cierre de sesión" (development double confirms logout) removes
+  the notice and the marker. The frame layout is unchanged.
+- **FC cases:** FC-11 complete.
+- **Annex H differences:** none. Decision: the unconfirmed state is a per-tab marker, because
+  C05 restricts the shared record to `{generation, blocked}`.
+- **Limitation:** the notice is per tab; another tab of the same browser stays blocked but does
+  not show it.

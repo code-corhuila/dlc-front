@@ -74,8 +74,9 @@ server {
   }
 
   # Real Auth deployment data (issuer, audience); absent in the front-only demo (C05).
+  # Separate from the demo mount so it can be added without touching fixtures/.
   location = /auth-config.json {
-    root /usr/share/nginx/deployment;
+    root /usr/share/nginx/auth;
     add_header Cache-Control "no-store" always;
     try_files $uri =404;
   }

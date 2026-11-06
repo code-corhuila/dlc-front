@@ -9,7 +9,10 @@ import {
   type AuthPort,
 } from './core/session/session.ts';
 import { createAuthAdapter } from './core/session/authAdapter.ts';
-import { loadAuthConfig } from './core/session/authConfig.ts';
+import {
+  loadAuthConfig,
+  UNCONFIGURED_AUTH,
+} from './core/session/authConfig.ts';
 import { createLogoutMarker } from './core/session/logoutMarker.ts';
 import {
   CHANNEL_NAME,
@@ -18,7 +21,7 @@ import {
 } from './core/session/sessionControl.ts';
 import type { Establishment } from './core/session/session.ts';
 import { createHttpCapability } from './core/http/capability.ts';
-import { createHttpClient, type HttpClientDeps } from './core/http/client.ts';
+import { createHttpClient } from './core/http/client.ts';
 import { createTelemetry } from './core/telemetry/telemetry.ts';
 import { renderFrame } from './layout/frame.ts';
 import { orderNavigation } from './layout/navigation.ts';
@@ -30,8 +33,7 @@ import {
 import { renderPublicFrame } from './layout/publicFrame.ts';
 
 const NO_USER = { id: '', name: '', roles: [], permissions: [] };
-type PreviewAuthPort = AuthPort & {
-  demoFetch?: HttpClientDeps['fetch'];
+type ShellAuthPort = AuthPort & {
   remote?: (message: unknown) => 'established' | 'cleared' | null;
   remoteRecord?: (raw: string | null) => 'established' | 'cleared' | null;
 };
@@ -41,59 +43,41 @@ type AuthHooks = Readonly<{
   changed: (kind: 'established' | 'cleared' | null | undefined) => void;
 }>;
 
-/** Without Auth deployment data or the dev double, the session is unavailable. */
-const unavailableAuth: PreviewAuthPort = {
-  restore: () => Promise.reject(new Error('AUTH_NOT_CONFIGURED')),
-  complete: () => Promise.reject(new Error('AUTH_NOT_CONFIGURED')),
-  logout: () => Promise.resolve(),
-};
-
 /**
- * C05: deployments with /auth-config.json use the real Auth adapter; malformed data fails
- * closed. Only when it is absent may the local preview load its development double.
+ * C05: the real Auth adapter needs /auth-config.json; absent or malformed data leaves the
+ * session unavailable (fails closed).
  */
-async function loadAuthPort(hooks: AuthHooks): Promise<PreviewAuthPort> {
+async function loadAuthPort(hooks: AuthHooks): Promise<ShellAuthPort> {
   const config = await loadAuthConfig({
     fetch: (url, init) => fetch(url, init),
   });
-  if (config.status === 'configured') {
-    const channel = new BroadcastChannel(CHANNEL_NAME);
-    const adapter = createAuthAdapter({
-      fetch: (url, init) => fetch(url, init),
-      uuid: () => crypto.randomUUID(),
-      now: () => Date.now(),
-      issuer: config.issuer,
-      audience: config.audience,
-      locks: navigator.locks,
-      control: createSessionControl({
-        // Storage access may throw (blocked site data); the control fails closed.
-        storage: {
-          getItem: (key) => localStorage.getItem(key),
-          setItem: (key, value) => localStorage.setItem(key, value),
-        },
-        channel,
-      }),
-      onSessionEnded: hooks.ended,
-      onRenewed: hooks.renewed,
-    });
-    // FC-12: other tabs announce only {generation, kind}; storage events also notify.
-    channel.onmessage = (event) => hooks.changed(adapter.remote(event.data));
-    addEventListener('storage', (event) => {
-      if (event.key === CONTROL_KEY)
-        hooks.changed(adapter.remoteRecord(event.newValue));
-    });
-    return adapter;
-  }
-  if (config.status === 'invalid') return unavailableAuth;
-  try {
-    const url = '/dev-auth.js';
-    const module = (await import(url)) as {
-      createAuthPort: () => PreviewAuthPort;
-    };
-    return module.createAuthPort();
-  } catch {
-    return unavailableAuth;
-  }
+  if (config.status !== 'configured') return UNCONFIGURED_AUTH;
+  const channel = new BroadcastChannel(CHANNEL_NAME);
+  const adapter = createAuthAdapter({
+    fetch: (url, init) => fetch(url, init),
+    uuid: () => crypto.randomUUID(),
+    now: () => Date.now(),
+    issuer: config.issuer,
+    audience: config.audience,
+    locks: navigator.locks,
+    control: createSessionControl({
+      // Storage access may throw (blocked site data); the control fails closed.
+      storage: {
+        getItem: (key) => localStorage.getItem(key),
+        setItem: (key, value) => localStorage.setItem(key, value),
+      },
+      channel,
+    }),
+    onSessionEnded: hooks.ended,
+    onRenewed: hooks.renewed,
+  });
+  // FC-12: other tabs announce only {generation, kind}; storage events also notify.
+  channel.onmessage = (event) => hooks.changed(adapter.remote(event.data));
+  addEventListener('storage', (event) => {
+    if (event.key === CONTROL_KEY)
+      hooks.changed(adapter.remoteRecord(event.newValue));
+  });
+  return adapter;
 }
 
 /** C01 required browser facilities; no insecure fallback when missing (FC-18). */
@@ -200,7 +184,7 @@ async function boot() {
     sink: (event) => console.info('dlc-front', event),
   });
   const transport = createHttpClient({
-    fetch: (url, init) => auth.demoFetch?.(url, init) ?? fetch(url, init),
+    fetch: (url, init) => fetch(url, init),
     // The Auth adapter holds the access token privately; portals never see it (C05).
     accessToken: () =>
       session.getSnapshot().state !== 'authenticated'

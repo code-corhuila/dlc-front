@@ -21,6 +21,8 @@ server {
   location ~ ^/api/v1/(.*)$ {
     set $gateway ${GATEWAY_UPSTREAM};
     proxy_pass $gateway/$1$is_args$args;
+    # The Gateway rate-limits per browser: it trusts this address only from this container.
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
     add_header Cache-Control "no-store" always;
   }
 
@@ -72,8 +74,9 @@ server {
   }
 
   # Real Auth deployment data (issuer, audience); absent in the front-only demo (C05).
+  # Separate from the demo mount so it can be added without touching fixtures/.
   location = /auth-config.json {
-    root /usr/share/nginx/deployment;
+    root /usr/share/nginx/auth;
     add_header Cache-Control "no-store" always;
     try_files $uri =404;
   }

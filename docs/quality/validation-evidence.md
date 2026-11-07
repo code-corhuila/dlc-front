@@ -1280,3 +1280,63 @@ width; the mockup chip itself overflows the 1280 px page edge.
 - **Annex H differences:** none.
 - **Limitation:** the base compose still has the Prism mock profile and the `-demo` portal
   releases in `fixtures/portal-registry.json`; they are removed in the next increments.
+
+## DEV-FRONT-NO-DEMO-COMPOSE-001
+
+- **Story:** HU-IAM-001 (`code-corhuila/dlc-docs#47`); issue #1. Project-owner direction: real
+  integration, no demo data or doubles.
+- **Change:**
+  - `deploy/compose.yml`: `GATEWAY_UPSTREAM` defaults to `http://dlc-api-gateway:8080/api/v1`;
+    `AUTH_CONFIG_FILE` is required and mounted as `auth-config.json`; the Prism `mock-gateway`
+    service and its `mock` profile are removed. `deploy/compose.gateway.yml` is no longer needed
+    and is deleted.
+  - `.env.example`: real Gateway upstream, `AUTH_CONFIG_FILE`; no mock or `DLC_DOCS_OPENAPI`.
+  - `README.md`: Docker deployment against the real Gateway; demo instructions removed.
+- **TDD:** configuration change. `tests/scripts/gateway-deployment.test.mjs` now requires the real
+  upstream and Auth data and forbids the mock; run against the previous `compose.yml` and
+  `.env.example` it fails (2 failures), and passes with this change.
+- **Validation:** typecheck, lint, format check, tests, `git diff --check` pass.
+  `docker compose -f deploy/compose.yml config` resolves the real upstream and the Auth data
+  mount, and refuses to start without `AUTH_CONFIG_FILE`.
+- **FC cases:** C06 Gateway path by default.
+- **Annex H differences:** none.
+- **Limitation:** portal upstream defaults and networks still use the names published by the
+  portal repositories (`*-portal-demo`); `fixtures/portal-registry.json` lists their `-demo`
+  releases until the portals publish real ones.
+
+## DEV-FRONT-NO-DEMO-SCOPE-001
+
+- **Story:** HU-IAM-001 (`code-corhuila/dlc-docs#47`); issue #1. Project-owner direction
+  (2026-11-06): real integration and final delivery.
+- **Change:**
+  - `docs/spec/dlc-front-spec.md`: the stage is real integration; FR-06 is the real Auth adapter
+    (FC-09 to FC-12) instead of the development double; FR-12 deploys against the real Gateway;
+    status, decisions, next increments and Definition of Done updated; the development sign-in
+    and the demo "Historia clínica" decision are removed.
+  - `docs/demo/clinical-dashboard-demo.md` and `docs/demo/patient-portal-integration.md`
+    removed: they described the demo data, personas and doubles that no longer exist.
+- **TDD:** documentation change; verified with `npm run format:check` and `git diff --check`.
+- **Limitation:** `fixtures/portal-registry.json` still lists `-demo` portal releases until the
+  portals publish real ones.
+
+## DEV-FRONT-APPOINTMENTS-RELEASE-001
+
+- **Story:** HU-APT-001, HU-APT-003, HU-APT-004 (`code-corhuila/dlc-docs#54`, `#56`, `#69`);
+  contract `code-corhuila/dlc-docs#164`.
+- **Change:**
+  - `src/core/http/__generated__/catalog.ts`: regenerated from dlc-docs `e85860a`; adds
+    `AuthListdentists` (`GET /api/v1/auth/dentists`, protected, not idempotent).
+  - `fixtures/portal-registry.json`: `appointments` release `2.1.0`
+    (`/portals/appointments/2.1.0/entry.js`), the real release of `dlc-appointments-portal`.
+  - `deploy/compose.yml`, `.env.example`: `APPOINTMENTS_UPSTREAM` defaults to
+    `http://appointments-portal-dlc-front`.
+- **TDD:** RED first: the catalog test for `AuthListdentists` and the registry test for `2.1.0`
+  failed (2 failures, 210 passing); GREEN after regeneration and registration (212 passing).
+- **Validation:** tests, typecheck, lint, build, `git diff --check` pass; Prettier passes on the
+  changed files (`src/core/session/authAdapter.ts` was already unformatted on `develop`).
+  Browser (local real stack, 2026-11-07): sign-in through IAM, Calendar reads
+  `GET /api/v1/appointments` 200 and Clinical assignments `GET /api/v1/clinical-assignments` 200.
+- **FC cases:** C01 registry, C06 catalogue.
+- **Annex H differences:** none.
+- **Limitation:** `dlc-iam-api` must implement `GET /api/v1/auth/dentists`; until then the
+  Gateway call fails and the scheduling dentist selector stays empty.

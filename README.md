@@ -40,7 +40,7 @@ Step-by-step rules for portal teams: `docs/integration/portal-integration-guide.
 | `src/core/http/` | Shared request transport and target validation (C06) |
 | `src/layout/` | Common frame, public frame, Home, Dashboard shortcuts, 404 and service error pages |
 | `public/` | Static shell (`index.html`, styles, mockup assets) |
-| `fixtures/` | **Development only**: demo registry, Auth double, `dev-session.json` |
+| `fixtures/` | **Development only**: portal registry for local runs |
 | `deploy/` | Dockerfile, nginx template (same-origin proxy, `no-store`), demo compose |
 | `scripts/` | Build helpers, local preview server, PR gates |
 
@@ -56,30 +56,28 @@ npm run build
 npm run preview          # http://localhost:4180, Clinical demo expected on :4175
 ```
 
-Docker demo (start Clinical first, its network is used by dlc-front):
+Docker deployment: start `dlc-api-gateway`, IAM and the owner APIs on the `platform` network
+and the portal containers from their repositories; copy `deploy/auth-config.example.json`
+with the stage's `IAM_JWT_ISSUER` and `IAM_JWT_AUDIENCE`, then:
 
 ```sh
-# in dlc-clinical-portal
-docker compose -f deploy/compose.yml up --build -d
-# in dlc-front
-docker compose -f deploy/compose.yml up --build -d   # http://localhost:8080
+AUTH_CONFIG_FILE=/absolute/path/auth-config.json \
+  docker compose -f deploy/compose.yml up --build -d   # http://localhost:8080
 ```
 
-Variables are listed in `.env.example`. The demo persona is set in `fixtures/dev-session.json`
-(`DENTIST`, `ADMINISTRATOR`, `SECRETARY_ASSISTANT`); set `persona` to `null` to start signed out.
-The preview-only Auth double accepts `admin@demo.test`, `odontologo@demo.test` and
-`asistente@demo.test` with password `Demo1234!`. These are synthetic users, not Auth accounts.
-The demo script is `docs/demo/clinical-dashboard-demo.md`.
+Variables are listed in `.env.example`. There is no development sign-in: without a valid
+`auth-config.json` the session is unavailable, and sign-in always goes through IAM.
 
 The IAM image serves `/portals/iam/0.1.0-local/entry.js`. After the front Compose creates
 `dlc-front_default`, start `dlc-iam-portal/deploy/compose.yml` on that network. The front
 proxies IAM assets to `iam-portal-demo` and selects the portal for `/login`,
 `/recover-password`, `/app/administration` and `/app/sessions`. Keep the registry release
-aligned with `IAM_RELEASE` if either changes. The development Auth double handles only the
-three synthetic logins and previews the IAM staff and own-session lists in the browser.
-These records are fictional and read-only; save and revoke actions report unavailable.
+aligned with `IAM_RELEASE` if either changes.
 For `npm run preview`, `IAM_ORIGIN` must point to an IAM asset server that serves the
 versioned path; the Angular standalone preview on port 4201 does not serve that module path.
+
+With `auth-config.json` present the shell uses the real Auth adapter. IAM's `IAM_AUTH_ALLOWED_ORIGIN` and the gateway's `GATEWAY_ALLOWED_ORIGIN`
+must both be the front origin (default `http://localhost:8080`).
 
 ## Quality
 

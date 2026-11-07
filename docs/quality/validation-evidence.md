@@ -963,3 +963,380 @@ width; the mockup chip itself overflows the 1280 px page edge.
 - **Browser check:** not performed; no visual change. Sign-in through the IAM `0.1.0-local`
   release already used `AuthLogin` and is covered by the preview integration test.
 - **Limitation:** real password login remains pending on Auth (ADR-016).
+
+## DEV-FRONT-AUTH-ADAPTER-001
+
+- **Story:** HU-IAM-001 (`code-corhuila/dlc-docs#47`); issue #1 (shared session and HTTP-client
+  integration for the IAM remote). Spec section 8, increment 3 (real Auth adapter).
+- **Change:** `src/core/session/authAdapter.ts` adds `createAuthAdapter`, the real C05 `AuthPort`
+  against the same-origin Gateway (`auth-service.yaml`, verified against `dlc-iam-api` develop
+  `6bf3e63`).
+  - `restore`: `GET /api/v1/auth/csrf`, then `POST /api/v1/auth/refresh` with `X-CSRF-Token` and
+    same-origin cookie transport; `401` resolves anonymous, `403`/transport failure is unavailable.
+  - `complete`: only `AuthLogin` (`POST /api/v1/auth/login`, body passed unchanged); public `401`
+    is a generic failure that creates no session.
+  - `logout`: drops the in-memory access token first, then revokes with fresh CSRF proof; a failed
+    revocation is reported, never claimed.
+  - Tokens are rejected as `INVALID_RESPONSE` when `sub` differs from `user.id`, issuer or audience
+    differ from deployment configuration, or `exp`, `permissions`, `roles` or `expiresIn` are
+    malformed. `expiresAt` is the earlier of JWT `exp` and receipt plus `expiresIn`; an expired
+    token is never returned to the HTTP client.
+  - Every attempt carries a fresh `X-Correlation-Id`, `cache: no-store` and a 10 s deadline that
+    fails closed.
+- **TDD:** `tests/core/session/authAdapter.test.mjs` (15 tests) failed first with
+  `ERR_MODULE_NOT_FOUND` for `authAdapter.ts`; all pass after the change.
+- **Validation:** typecheck, lint, format check, tests (165), coverage (99.47 % lines, 90.97 %
+  branches; `authAdapter.ts` 97.81 % lines), build and `git diff --check` pass. Size 183/400.
+- **FC cases:** FC-09 (login failure creates no session) at adapter level; FC-10 multi-tab
+  serialization is not covered yet.
+- **Annex H differences:** none.
+- **Browser check:** not performed; the adapter is not wired into `main.ts` yet, so nothing is
+  observable in the browser.
+- **Limitation:** not wired into `main.ts` (needs issuer/audience deployment data). Web Lock
+  `dlc-auth-v1`, BroadcastChannel `dlc-session-v1`, the `dlc-session-control-v1` blocked marker,
+  renewal before expiry and `retryRestore` remain for the next increment.
+
+## DEV-FRONT-AUTH-WIRING-001
+
+- **Story:** HU-IAM-001 (`code-corhuila/dlc-docs#47`); issue #1. Follows
+  `DEV-FRONT-AUTH-ADAPTER-001`.
+- **Change:**
+  - `src/core/session/authConfig.ts`: reads `/auth-config.json` (`no-store`, same origin, 10 s)
+    with exactly `{issuer, audience}`. Results: `configured`, `absent` (404) or `invalid`
+    (malformed, extra keys, non-404 error, network failure).
+  - `src/main.ts`: `configured` builds the real C05 Auth adapter; `invalid` fails closed
+    (`AUTH_NOT_CONFIGURED`, session unavailable) and never loads the development double; only
+    `absent` keeps the local preview on `dev-auth.js`.
+  - `deploy/nginx.conf.template`: serves `/auth-config.json` from the deployment data mount with
+    `Cache-Control: no-store`; the front-only demo does not ship it.
+- **TDD:** `tests/core/session/authConfig.test.mjs` (4 tests) failed first with
+  `ERR_MODULE_NOT_FOUND` for `authConfig.ts`; all pass after the change.
+- **Validation:** typecheck, lint, format check, tests (169), coverage (99.47 % lines, 91.18 %
+  branches; `authConfig.ts` 100 %), build and `git diff --check` pass. Size 65/400.
+- **Browser check (preview, `npm run preview`):**
+  - Without `auth-config.json`: `GET /auth-config.json` 404, then `GET /dev-auth.js` 200; the
+    preview behaves as before.
+  - With a temporary `fixtures/auth-config.json` (not committed): `GET /auth-config.json` 200,
+    then `GET /api/v1/auth/csrf`; the preview has no Gateway and answers HTML, so the adapter
+    rejects it and the shell shows "Servicio de autenticación no disponible" with "Reintentar".
+    `dev-auth.js` is not requested.
+- **FC cases:** FC-09 path now reaches the real adapter when configured.
+- **Annex H differences:** none.
+- **Limitation:** no end-to-end login yet: it needs the real Gateway and IAM. The compose file does
+  not provide `auth-config.json` until the Gateway exists. Multi-tab coordination (FC-10) remains
+  pending.
+
+## DEV-FRONT-AUTH-TABS-001
+
+- **Story:** HU-IAM-001 (`code-corhuila/dlc-docs#47`); issue #1. FC-10 ("eligible cookie after
+  reload; two tabs renew").
+- **Change:**
+  - `src/core/session/authAdapter.ts`: every cookie operation (CSRF read plus refresh, login,
+    logout) runs under the exclusive Web Lock `dlc-auth-v1`; waiting longer than 10 s fails closed
+    with `SESSION_UNAVAILABLE` before any network attempt. Restores and renewals are single-flight
+    within a tab. New `freshAccessToken()` renews before a protected request when the token
+    expires within 30 s; a failed renewal returns no token. No token is broadcast between tabs.
+  - `src/core/http/client.ts`: the access token may be asynchronous; renewal completes before
+    dispatch, and a request cancelled while waiting is never sent (`CANCELLED`).
+  - `src/core/session/session.ts`: optional `freshAccessToken` in `AuthPort`.
+  - `src/main.ts`: passes `navigator.locks` and uses `freshAccessToken` for protected requests.
+- **TDD:** `tests/core/session/authTabs.test.mjs` (8 tests: lock name and mode, two tabs never
+  refresh concurrently, single-flight, lock timeout, renewal window, no session, failed renewal)
+  and the client test "protected requests wait for the renewed access token" failed first (8 and 1
+  failures). After the change, the existing FC-14 cancel case exposed that a request aborted while
+  awaiting the token was still dispatched; the client now returns `CANCELLED` before dispatch.
+- **Validation:** typecheck, lint, format check, tests (178), coverage (99.48 % lines, 91.01 %
+  branches), build and `git diff --check` pass. Size 113/400.
+- **Browser check (preview):** with a temporary `auth-config.json` (not committed), the shell
+  restores through the real adapter, shows "Servicio de autenticación no disponible" (no Gateway in
+  preview) and `navigator.locks.query()` reports no held or pending lock afterwards. Without the
+  file, the development double loads as before.
+- **FC cases:** FC-10 covered at adapter and client level; real two-tab refresh against IAM needs
+  the Gateway.
+- **Annex H differences:** none.
+- **Limitation:** `dlc-session-control-v1` generation/blocked marker, BroadcastChannel
+  `dlc-session-v1`, `retryRestore`, ending the session on renewal 401 and expiry handling remain
+  for FC-11/FC-12.
+
+## DEV-FRONT-AUTH-BLOCK-001
+
+- **Story:** HU-IAM-001 (`code-corhuila/dlc-docs#47`); issue #1. FC-11 ("protected 401, expiry,
+  logout outage") and the stale-generation part of FC-12.
+- **Change:**
+  - `src/core/session/sessionControl.ts`: the shared record `dlc-session-control-v1` holds only
+    `{generation, blocked}`; absent means generation 0, invalid data or refused storage fails
+    closed (`null`). `advance` writes the next generation and posts only `{generation, kind}` on
+    BroadcastChannel `dlc-session-v1`.
+  - `src/core/session/authAdapter.ts`: a blocked or invalid marker suppresses restore and renewal
+    without network. Successful login clears the block and announces `established`; logout
+    blocks and announces `cleared` before Auth is called, so an outage keeps the block across
+    reloads. A renewal 401 ends the session (block plus `onSessionEnded`) and is never replayed.
+    New `block()` records a protected 401 under the lock. A rotation finishing after the
+    generation changed is discarded.
+  - `src/core/session/session.ts`: optional `block` in `AuthPort`.
+  - `src/main.ts`: wires `localStorage`, `BroadcastChannel`, `onSessionEnded` and calls
+    `auth.block()` on a protected 401.
+- **TDD:** `tests/core/session/sessionControl.test.mjs` (4) and `authBlock.test.mjs` (10) failed
+  first with `ERR_MODULE_NOT_FOUND` for `sessionControl.ts`; all pass after the change. Shared
+  doubles live in `tests/core/session/controlDoubles.mjs`.
+- **Validation:** typecheck, lint, format check, tests (192), coverage (99.44 % lines, 91.16 %
+  branches), build and `git diff --check` pass. Size 172/400.
+- **Browser check (preview):** with a temporary `auth-config.json` and the record
+  `{"generation":3,"blocked":true}`, reloading `/app/dashboard` makes no `/api/v1` request, the
+  record is unchanged and the shell routes to `/login` as anonymous. Test data removed afterwards.
+- **FC cases:** FC-11 at adapter level; FC-12 stale rotation only.
+- **Annex H differences:** none.
+- **Limitation:** listening to `dlc-session-v1`/storage events in other tabs, expiry handling,
+  `retryRestore` and the "server logout unconfirmed" screen remain for the next increment.
+
+## DEV-FRONT-AUTH-SYNC-001
+
+- **Story:** HU-IAM-001 (`code-corhuila/dlc-docs#47`); issue #1. FC-12 ("old generation or late
+  success after logout") and the expiry part of FC-11.
+- **Change:**
+  - `src/core/session/authAdapter.ts`: `remote(message)` accepts only `{generation, kind}` from
+    BroadcastChannel `dlc-session-v1`; `remoteRecord(raw)` maps storage events of
+    `dlc-session-control-v1` (invalid data fails closed as `cleared`). Generations at or below the
+    highest this tab knows are stale and ignored; newer ones drop this tab's token.
+    `onRenewed` reports an ordinary renewal (not a restore).
+  - `src/core/session/session.ts`: optional expiry clock; at `expiresAt` an authenticated
+    snapshot becomes `expired`/`EXPIRED` with identity cleared. `renewed(est)` moves the expiry for
+    the same user only; it is ignored after the session ended. `invalidate('LOGOUT')` for a logout
+    in another tab.
+  - `src/main.ts`: one shared `BroadcastChannel`, `storage` listener; `cleared` cleans up locally,
+    `established` triggers a serialized restore; wires the expiry clock and `onRenewed`.
+- **TDD:** `tests/core/session/sessionSync.test.mjs` (7 tests) failed first (7 failures:
+  `createSession` had no expiry or `renewed`; the adapter had no `remote`, `remoteRecord` or
+  `onRenewed`). After implementing, 2 still failed because the test clock exposed `now` as a
+  number instead of a function; the double was fixed, not the production code. All pass.
+- **Validation:** typecheck, lint, format check, tests (199), coverage (99.46 % lines, 91.55 %
+  branches), build and `git diff --check` pass. Size 146/400.
+- **Browser check (preview, two tabs, temporary `auth-config.json`):** posting
+  `{generation: 99, kind: 'established'}` on `dlc-session-v1` from tab A made tab B request
+  `/api/v1/auth/csrf` again (1 to 2); posting the same generation again caused no new request
+  (stale). Test data removed afterwards.
+- **FC cases:** FC-12 and FC-11 expiry at unit level; real two-tab login/logout against IAM needs
+  the Gateway.
+- **Annex H differences:** none.
+- **Limitation:** `retryRestore` still returns no C06 Result, and the "server logout unconfirmed"
+  screen is not rendered by the shell; recorded for a follow-up.
+
+## DEV-FRONT-AUTH-RECOVERY-001
+
+- **Story:** HU-IAM-001 (`code-corhuila/dlc-docs#47`); issue #1. Closes the limitations of
+  `DEV-FRONT-AUTH-SYNC-001` (FC-11).
+- **Change:**
+  - `src/core/session/session.ts`: `retryRestore()` resolves the C06 Result (`ok`, status 200,
+    sanitized snapshot as data); when `auth.isBlocked()` is true it fails locally with
+    `SESSION_UNAVAILABLE` without asking Auth; an unavailable Auth also returns
+    `SESSION_UNAVAILABLE`. `start` became a named function so both share it.
+  - `src/core/session/authAdapter.ts`: `isBlocked()` is true for a blocked or invalid marker.
+  - `src/layout/pages.ts`: `renderLogoutUnconfirmed` (`role="alert"`,
+    `data-code="LOGOUT_UNCONFIRMED"`): states that the browser signed out but the server logout
+    was not confirmed, with "Reintentar cierre de sesión"; it never claims revocation.
+  - `src/main.ts`: the frame logout shows that notice when `session.logout()` fails and retries
+    only on the explicit click; IAM's `iamSession.retryRestore` returns the new Result.
+- **TDD:** 3 session tests, 1 adapter test and 1 page test failed first (`retryRestore` and
+  `isBlocked` missing; `renderLogoutUnconfirmed` not exported). All pass after the change.
+- **Validation:** typecheck, lint, format check, tests (204), coverage (99.46 % lines, 91.62 %
+  branches), build and `git diff --check` pass. Size 80/400.
+- **Browser check (preview):** the notice rendered from the built module appears at the bottom
+  with the existing banner style, `role="alert"`, the Spanish text above and a working retry
+  button. A real failed logout was not reproduced: the development double never fails and the
+  real adapter needs the Gateway to sign in first.
+- **FC cases:** FC-11 complete at unit level.
+- **Annex H differences:** none. The notice is not in the mockup; it reuses the update banner
+  style.
+- **Limitation:** after a reload the blocked marker cannot tell a confirmed from an unconfirmed
+  logout (the record holds only `generation` and `blocked`), so the notice is shown only in the
+  page where the logout failed.
+
+## DEV-FRONT-AUTH-LOGOUT-001
+
+- **Story:** HU-IAM-001 (`code-corhuila/dlc-docs#47`); issue #1. Closes the limitation of
+  `DEV-FRONT-AUTH-RECOVERY-001` (FC-11: "shows server logout unconfirmed" across reload).
+- **Change:**
+  - `src/core/session/logoutMarker.ts`: per-tab `sessionStorage` key
+    `dlc-logout-unconfirmed-v1` with the single value `1`; no identity, token or credential.
+    Unexpected values or refused storage never show the notice. The shared
+    `dlc-session-control-v1` record still holds only `{generation, blocked}` (C05).
+  - `src/main.ts`: a failed logout sets the marker and shows the notice; a confirmed logout or a
+    new authenticated session clears it; on load a pending marker shows the notice again.
+  - `src/main.ts`: the shell now owns a dedicated container (`display: contents`) instead of
+    `document.body`. Before, every frame swap replaced all body children and removed shell
+    notices (the logout notice of `DEV-FRONT-AUTH-RECOVERY-001` and the update banner).
+- **TDD:** `tests/core/session/logoutMarker.test.mjs` (3 tests) failed first with
+  `ERR_MODULE_NOT_FOUND`; all pass after the change. The container defect was found in the
+  browser check (notice absent after reload with the marker set) and fixed before the PR.
+- **Validation:** typecheck, lint, format check, tests (207), coverage, build and
+  `git diff --check` pass. Size 66/400.
+- **Browser check (preview):** with the marker set, reloading `/` shows the notice; navigating to
+  `/login` keeps it; "Reintentar cierre de sesión" (development double confirms logout) removes
+  the notice and the marker. The frame layout is unchanged.
+- **FC cases:** FC-11 complete.
+- **Annex H differences:** none. Decision: the unconfirmed state is a per-tab marker, because
+  C05 restricts the shared record to `{generation, blocked}`.
+- **Limitation:** the notice is per tab; another tab of the same browser stays blocked but does
+  not show it.
+
+## DEV-FRONT-GATEWAY-001
+
+- **Story:** HU-IAM-001 (`code-corhuila/dlc-docs#47`); issue #1. Wires the deployment (FR-12, C06)
+  to the real `dlc-api-gateway` at the project owner's request (2026-11-06). The mock Gateway
+  stays the demo default.
+- **Change:**
+  - `deploy/nginx.conf.template`: the `/api/v1` proxy sends
+    `X-Forwarded-For $proxy_add_x_forwarded_for`. The Gateway rate-limits per client
+    address and trusts that header only from this container (`GATEWAY_TRUSTED_PROXY`,
+    `code-corhuila/dlc-api-gateway#14`).
+  - `deploy/compose.yml`: `dlc-front` also joins the external `platform` network
+    (`PLATFORM_NETWORK`), where the Gateway runs as `dlc-api-gateway`.
+  - `.env.example`: `PLATFORM_NETWORK` and the real upstream
+    `GATEWAY_UPSTREAM=http://dlc-api-gateway:8080/api/v1` (the Gateway keeps `/api/v1`).
+- **TDD:** `tests/scripts/gateway-deployment.test.mjs` (3 tests) failed first against the
+  unchanged files (0/3: missing header, network and variable); all pass after the change. Two
+  defects of the test itself were fixed before recording RED: the service block regex and CRLF
+  working copies on Windows.
+- **Validation:** typecheck, lint, format check, tests (210), coverage (99.47 % lines,
+  91.70 % branches), build and `git diff --check` pass. Size 15/400.
+- **Deployment check (local, not a deployment):**
+  - Setup: `dlc-front` from this branch plus `dlc-api-gateway` `develop` (`672669a`) on
+    `platform`. The Gateway trusts the front address. Stand-in `auth-service` and
+    `patients-api` come from the Gateway smoke stubs. All requests entered through the front on
+    port 18082.
+  - Results, 7/7: `/api/v1/auth/jwks` reached the IAM stand-in with `/api/v1` preserved;
+    correlation id returned; `401 UNAUTHORIZED` without `Authorization`; caller
+    `X-User-Role` stripped; this browser limited after 10 logins; a forged
+    `X-Forwarded-For` did not reset it; another browser (another container behind the same
+    front) still logged in.
+  - Control: with the Gateway trusting no proxy, that other browser got `429`. Every user
+    would share one budget.
+- **FC cases:** none; deployment only (FR-12).
+- **Annex H differences:** none. Annex H rule 3 holds: only the container knows the Gateway
+  address.
+- **Limitations:**
+  - Starting the compositor now needs the `platform` network (`docker network create
+    platform`), like the other external networks.
+  - `GATEWAY_TRUSTED_PROXY` on the Gateway must be set to this container's `platform`
+    address by whoever assembles the platform (`-infra`).
+  - The real Auth adapter (FC-09, FC-10) is still pending.
+
+## DEV-FRONT-GATEWAY-001
+
+- **Story:** HU-IAM-001 (`code-corhuila/dlc-docs#47`); issue #1. Connects the compositor to the
+  real `dlc-api-gateway` (C06).
+- **Change:**
+  - `deploy/compose.gateway.yml`: override that joins the external `platform` network, sets
+    `GATEWAY_UPSTREAM=http://dlc-api-gateway:8080/api/v1` (the compositor strips `/api/v1`, the
+    real Gateway keeps it) and mounts `AUTH_CONFIG_FILE` (required) as `auth-config.json`.
+  - `deploy/nginx.conf.template`: `/auth-config.json` is served from `/usr/share/nginx/auth`, a
+    separate mount, so the demo `fixtures/` mount stays read-only and untouched.
+  - `deploy/auth-config.example.json`: placeholders for `IAM_JWT_ISSUER` and `IAM_JWT_AUDIENCE`;
+    used literally it is rejected by the adapter (fails closed).
+  - `README.md`: how to run against the real Gateway and the origin settings required in IAM
+    (`IAM_AUTH_ALLOWED_ORIGIN`) and the Gateway (`GATEWAY_ALLOWED_ORIGIN`).
+  - `src/core/http/__generated__/catalog.ts`: regenerated from dlc-docs `6953a34`; the 68
+    Gateway-exposed operations are unchanged, only the revision moves from `f5ebbec`.
+- **TDD:** configuration change; verification commands recorded instead of RED.
+- **Validation:** typecheck, lint, format check, tests (210), build and `git diff --check` pass.
+  Size 40/400 (generated catalog excluded). `docker compose -f deploy/compose.yml -f
+  deploy/compose.gateway.yml config` resolves `GATEWAY_UPSTREAM`, the `platform` network and the
+  `auth-config.json` mount.
+- **Integration check (Docker, `platform` network):** `dlc-api-gateway` image built from its
+  `develop` (`672669a`) and the front image from this branch, no owner APIs running:
+  - `GET /auth-config.json` 200, `Cache-Control: no-store`;
+  - `GET /api/v1/auth/csrf` reached the Gateway: 503 `SERVICE_UNAVAILABLE` envelope with
+    `X-Correlation-Id`/`traceId`;
+  - `GET /api/v1/patients` without `Authorization`: 401 `UNAUTHORIZED`, `WWW-Authenticate: Bearer`;
+  - with `Authorization` and `X-Correlation-Id: 11111111-1111-4111-8111-111111111111`: 503 and the
+    same id echoed;
+  - `/internal/v1/...` is never proxied by the compositor (it returns the shell HTML).
+  - Browser on `/app/dashboard`: `auth-config.json` 200, `/api/v1/auth/csrf` 503, the shell shows
+    "Servicio de autenticación no disponible"; `dev-auth.js` is not requested.
+  Containers and images were removed afterwards.
+- **FC cases:** FC-13 (forbidden paths not proxied) and the C06 Gateway path end to end.
+- **Annex H differences:** none.
+- **Limitation:** no real login yet: IAM, its database and the owner APIs were not running. The
+  front compose still requires the portal networks of the demo.
+
+## DEV-FRONT-NO-DEMO-AUTH-001
+
+- **Story:** HU-IAM-001 (`code-corhuila/dlc-docs#47`); issue #1. Project-owner direction
+  (2026-11-06): real integration and final delivery, no demo data or doubles.
+- **Change:**
+  - Removed the development Auth double: `fixtures/dev-auth.js` (synthetic staff, personas and
+    `demoFetch`) and `fixtures/dev-session.json`, plus their nginx locations.
+  - `src/core/session/authConfig.ts`: `UNCONFIGURED_AUTH`, a frozen port whose restore and
+    completion reject `AUTH_NOT_CONFIGURED`.
+  - `src/main.ts`: only `configured` Auth data builds the real adapter; absent or invalid data uses
+    `UNCONFIGURED_AUTH` (session unavailable). No dynamic import of a double, no `demoFetch`.
+  - `tests/composition/iam-integration.test.mjs`: removed the test of the double's synthetic data.
+  - `README.md`: no synthetic accounts or personas; sign-in only through IAM.
+- **TDD:** `C05: without valid Auth deployment data the session fails closed, never a double`
+  failed first (`UNCONFIGURED_AUTH` not exported); passes after the change.
+- **Validation:** typecheck, lint, format check, tests (210), coverage (99.47 % lines, 91.71 %
+  branches), build and `git diff --check` pass. Size 293/400 (mostly removed lines).
+- **FC cases:** FC-09 now only through the real adapter.
+- **Annex H differences:** none.
+- **Limitation:** the base compose still has the Prism mock profile and the `-demo` portal
+  releases in `fixtures/portal-registry.json`; they are removed in the next increments.
+
+## DEV-FRONT-NO-DEMO-COMPOSE-001
+
+- **Story:** HU-IAM-001 (`code-corhuila/dlc-docs#47`); issue #1. Project-owner direction: real
+  integration, no demo data or doubles.
+- **Change:**
+  - `deploy/compose.yml`: `GATEWAY_UPSTREAM` defaults to `http://dlc-api-gateway:8080/api/v1`;
+    `AUTH_CONFIG_FILE` is required and mounted as `auth-config.json`; the Prism `mock-gateway`
+    service and its `mock` profile are removed. `deploy/compose.gateway.yml` is no longer needed
+    and is deleted.
+  - `.env.example`: real Gateway upstream, `AUTH_CONFIG_FILE`; no mock or `DLC_DOCS_OPENAPI`.
+  - `README.md`: Docker deployment against the real Gateway; demo instructions removed.
+- **TDD:** configuration change. `tests/scripts/gateway-deployment.test.mjs` now requires the real
+  upstream and Auth data and forbids the mock; run against the previous `compose.yml` and
+  `.env.example` it fails (2 failures), and passes with this change.
+- **Validation:** typecheck, lint, format check, tests, `git diff --check` pass.
+  `docker compose -f deploy/compose.yml config` resolves the real upstream and the Auth data
+  mount, and refuses to start without `AUTH_CONFIG_FILE`.
+- **FC cases:** C06 Gateway path by default.
+- **Annex H differences:** none.
+- **Limitation:** portal upstream defaults and networks still use the names published by the
+  portal repositories (`*-portal-demo`); `fixtures/portal-registry.json` lists their `-demo`
+  releases until the portals publish real ones.
+
+## DEV-FRONT-NO-DEMO-SCOPE-001
+
+- **Story:** HU-IAM-001 (`code-corhuila/dlc-docs#47`); issue #1. Project-owner direction
+  (2026-11-06): real integration and final delivery.
+- **Change:**
+  - `docs/spec/dlc-front-spec.md`: the stage is real integration; FR-06 is the real Auth adapter
+    (FC-09 to FC-12) instead of the development double; FR-12 deploys against the real Gateway;
+    status, decisions, next increments and Definition of Done updated; the development sign-in
+    and the demo "Historia clínica" decision are removed.
+  - `docs/demo/clinical-dashboard-demo.md` and `docs/demo/patient-portal-integration.md`
+    removed: they described the demo data, personas and doubles that no longer exist.
+- **TDD:** documentation change; verified with `npm run format:check` and `git diff --check`.
+- **Limitation:** `fixtures/portal-registry.json` still lists `-demo` portal releases until the
+  portals publish real ones.
+
+## DEV-FRONT-APPOINTMENTS-RELEASE-001
+
+- **Story:** HU-APT-001, HU-APT-003, HU-APT-004 (`code-corhuila/dlc-docs#54`, `#56`, `#69`);
+  contract `code-corhuila/dlc-docs#164`.
+- **Change:**
+  - `src/core/http/__generated__/catalog.ts`: regenerated from dlc-docs `e85860a`; adds
+    `AuthListdentists` (`GET /api/v1/auth/dentists`, protected, not idempotent).
+  - `fixtures/portal-registry.json`: `appointments` release `2.1.0`
+    (`/portals/appointments/2.1.0/entry.js`), the real release of `dlc-appointments-portal`.
+  - `deploy/compose.yml`, `.env.example`: `APPOINTMENTS_UPSTREAM` defaults to
+    `http://appointments-portal-dlc-front`.
+- **TDD:** RED first: the catalog test for `AuthListdentists` and the registry test for `2.1.0`
+  failed (2 failures, 210 passing); GREEN after regeneration and registration (212 passing).
+- **Validation:** tests, typecheck, lint, build, `git diff --check` pass; Prettier passes on the
+  changed files (`src/core/session/authAdapter.ts` was already unformatted on `develop`).
+  Browser (local real stack, 2026-11-07): sign-in through IAM, Calendar reads
+  `GET /api/v1/appointments` 200 and Clinical assignments `GET /api/v1/clinical-assignments` 200.
+- **FC cases:** C01 registry, C06 catalogue.
+- **Annex H differences:** none.
+- **Limitation:** `dlc-iam-api` must implement `GET /api/v1/auth/dentists`; until then the
+  Gateway call fails and the scheduling dentist selector stays empty.

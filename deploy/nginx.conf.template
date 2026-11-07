@@ -81,18 +81,6 @@ server {
     try_files $uri =404;
   }
 
-  location = /dev-session.json {
-    root /usr/share/nginx/deployment;
-    add_header Cache-Control "no-store" always;
-    try_files $uri =404;
-  }
-
-  location = /dev-auth.js {
-    root /usr/share/nginx/deployment;
-    add_header Cache-Control "no-store" always;
-    try_files $uri =404;
-  }
-
   location ^~ /portals/ {
     root /usr/share/nginx/deployment;
     add_header Cache-Control "no-store" always;

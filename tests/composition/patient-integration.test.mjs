@@ -31,10 +31,13 @@ test('C01/C04: register Patients and preserve administrative routes and the Clin
   assert.equal(patient.entryUrl, '/portals/patient/0.1.0-demo/entry.js');
   assert.equal(patient.navigation[0].path, '/app/patients');
 
-  for (const portalId of ['clinical', 'appointments']) {
+  for (const [portalId, release] of [
+    ['clinical', '0.1.0-demo'],
+    ['appointments', '2.1.0'],
+  ]) {
     assert.equal(
       registry.portals.find((portal) => portal.portalId === portalId).release,
-      '0.1.0-demo',
+      release,
     );
   }
 

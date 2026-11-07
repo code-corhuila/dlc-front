@@ -963,3 +963,65 @@ width; the mockup chip itself overflows the 1280 px page edge.
 - **Browser check:** not performed; no visual change. Sign-in through the IAM `0.1.0-local`
   release already used `AuthLogin` and is covered by the preview integration test.
 - **Limitation:** real password login remains pending on Auth (ADR-016).
+
+## DEV-FRONT-AUTH-ADAPTER-001
+
+- **Story:** HU-IAM-001 (`code-corhuila/dlc-docs#47`); issue #1 (shared session and HTTP-client
+  integration for the IAM remote). Spec section 8, increment 3 (real Auth adapter).
+- **Change:** `src/core/session/authAdapter.ts` adds `createAuthAdapter`, the real C05 `AuthPort`
+  against the same-origin Gateway (`auth-service.yaml`, verified against `dlc-iam-api` develop
+  `6bf3e63`).
+  - `restore`: `GET /api/v1/auth/csrf`, then `POST /api/v1/auth/refresh` with `X-CSRF-Token` and
+    same-origin cookie transport; `401` resolves anonymous, `403`/transport failure is unavailable.
+  - `complete`: only `AuthLogin` (`POST /api/v1/auth/login`, body passed unchanged); public `401`
+    is a generic failure that creates no session.
+  - `logout`: drops the in-memory access token first, then revokes with fresh CSRF proof; a failed
+    revocation is reported, never claimed.
+  - Tokens are rejected as `INVALID_RESPONSE` when `sub` differs from `user.id`, issuer or audience
+    differ from deployment configuration, or `exp`, `permissions`, `roles` or `expiresIn` are
+    malformed. `expiresAt` is the earlier of JWT `exp` and receipt plus `expiresIn`; an expired
+    token is never returned to the HTTP client.
+  - Every attempt carries a fresh `X-Correlation-Id`, `cache: no-store` and a 10 s deadline that
+    fails closed.
+- **TDD:** `tests/core/session/authAdapter.test.mjs` (15 tests) failed first with
+  `ERR_MODULE_NOT_FOUND` for `authAdapter.ts`; all pass after the change.
+- **Validation:** typecheck, lint, format check, tests (165), coverage (99.47 % lines, 90.97 %
+  branches; `authAdapter.ts` 97.81 % lines), build and `git diff --check` pass. Size 183/400.
+- **FC cases:** FC-09 (login failure creates no session) at adapter level; FC-10 multi-tab
+  serialization is not covered yet.
+- **Annex H differences:** none.
+- **Browser check:** not performed; the adapter is not wired into `main.ts` yet, so nothing is
+  observable in the browser.
+- **Limitation:** not wired into `main.ts` (needs issuer/audience deployment data). Web Lock
+  `dlc-auth-v1`, BroadcastChannel `dlc-session-v1`, the `dlc-session-control-v1` blocked marker,
+  renewal before expiry and `retryRestore` remain for the next increment.
+
+## DEV-FRONT-AUTH-WIRING-001
+
+- **Story:** HU-IAM-001 (`code-corhuila/dlc-docs#47`); issue #1. Follows
+  `DEV-FRONT-AUTH-ADAPTER-001`.
+- **Change:**
+  - `src/core/session/authConfig.ts`: reads `/auth-config.json` (`no-store`, same origin, 10 s)
+    with exactly `{issuer, audience}`. Results: `configured`, `absent` (404) or `invalid`
+    (malformed, extra keys, non-404 error, network failure).
+  - `src/main.ts`: `configured` builds the real C05 Auth adapter; `invalid` fails closed
+    (`AUTH_NOT_CONFIGURED`, session unavailable) and never loads the development double; only
+    `absent` keeps the local preview on `dev-auth.js`.
+  - `deploy/nginx.conf.template`: serves `/auth-config.json` from the deployment data mount with
+    `Cache-Control: no-store`; the front-only demo does not ship it.
+- **TDD:** `tests/core/session/authConfig.test.mjs` (4 tests) failed first with
+  `ERR_MODULE_NOT_FOUND` for `authConfig.ts`; all pass after the change.
+- **Validation:** typecheck, lint, format check, tests (169), coverage (99.47 % lines, 91.18 %
+  branches; `authConfig.ts` 100 %), build and `git diff --check` pass. Size 65/400.
+- **Browser check (preview, `npm run preview`):**
+  - Without `auth-config.json`: `GET /auth-config.json` 404, then `GET /dev-auth.js` 200; the
+    preview behaves as before.
+  - With a temporary `fixtures/auth-config.json` (not committed): `GET /auth-config.json` 200,
+    then `GET /api/v1/auth/csrf`; the preview has no Gateway and answers HTML, so the adapter
+    rejects it and the shell shows "Servicio de autenticación no disponible" with "Reintentar".
+    `dev-auth.js` is not requested.
+- **FC cases:** FC-09 path now reaches the real adapter when configured.
+- **Annex H differences:** none.
+- **Limitation:** no end-to-end login yet: it needs the real Gateway and IAM. The compose file does
+  not provide `auth-config.json` until the Gateway exists. Multi-tab coordination (FC-10) remains
+  pending.

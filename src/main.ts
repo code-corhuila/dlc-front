@@ -10,6 +10,10 @@ import {
 } from './core/session/session.ts';
 import { createAuthAdapter } from './core/session/authAdapter.ts';
 import { loadAuthConfig } from './core/session/authConfig.ts';
+import {
+  CHANNEL_NAME,
+  createSessionControl,
+} from './core/session/sessionControl.ts';
 import { createHttpCapability } from './core/http/capability.ts';
 import { createHttpClient, type HttpClientDeps } from './core/http/client.ts';
 import { createTelemetry } from './core/telemetry/telemetry.ts';
@@ -32,7 +36,9 @@ const unavailableAuth: PreviewAuthPort = {
  * C05: deployments with /auth-config.json use the real Auth adapter; malformed data fails
  * closed. Only when it is absent may the local preview load its development double.
  */
-async function loadAuthPort(): Promise<PreviewAuthPort> {
+async function loadAuthPort(
+  onSessionEnded: () => void,
+): Promise<PreviewAuthPort> {
   const config = await loadAuthConfig({
     fetch: (url, init) => fetch(url, init),
   });
@@ -43,6 +49,16 @@ async function loadAuthPort(): Promise<PreviewAuthPort> {
       now: () => Date.now(),
       issuer: config.issuer,
       audience: config.audience,
+      locks: navigator.locks,
+      control: createSessionControl({
+        // Storage access may throw (blocked site data); the control fails closed.
+        storage: {
+          getItem: (key) => localStorage.getItem(key),
+          setItem: (key, value) => localStorage.setItem(key, value),
+        },
+        channel: new BroadcastChannel(CHANNEL_NAME),
+      }),
+      onSessionEnded,
     });
   if (config.status === 'invalid') return unavailableAuth;
   try {
@@ -77,7 +93,7 @@ async function boot() {
   });
   const [registry, auth] = await Promise.all([
     loader.registry(),
-    loadAuthPort(),
+    loadAuthPort(() => session.invalidate('UNAUTHORIZED')),
   ]);
   const session = createSession(auth);
   await session.start();
@@ -116,10 +132,16 @@ async function boot() {
     fetch: (url, init) => auth.demoFetch?.(url, init) ?? fetch(url, init),
     // The Auth adapter holds the access token privately; portals never see it (C05).
     accessToken: () =>
-      session.getSnapshot().state === 'authenticated'
-        ? (auth.accessToken?.() ?? null)
-        : null,
-    onUnauthorized: () => session.invalidate('UNAUTHORIZED'),
+      session.getSnapshot().state !== 'authenticated'
+        ? null
+        : auth.freshAccessToken
+          ? auth.freshAccessToken()
+          : (auth.accessToken?.() ?? null),
+    // C05: a protected 401 ends the session here and blocks restoration in every tab.
+    onUnauthorized: () => {
+      session.invalidate('UNAUTHORIZED');
+      void auth.block?.();
+    },
     uuid: () => crypto.randomUUID(),
   });
   // C07: record failed requests by code and ids only; cancellations are expected.

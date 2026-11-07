@@ -330,7 +330,7 @@ export function createAuthAdapter(deps: AuthAdapterDeps) {
         if (proof === null) return;
         const response = await send('POST', '/logout', {
           'x-csrf-token': proof,
-        });
+        }, {});
         if (response.status !== 204) throw new AuthError('SESSION_UNAVAILABLE');
       });
     },

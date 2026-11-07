@@ -1340,3 +1340,10 @@ width; the mockup chip itself overflows the 1280 px page edge.
 - **Annex H differences:** none.
 - **Limitation:** `dlc-iam-api` must implement `GET /api/v1/auth/dentists`; until then the
   Gateway call fails and the scheduling dentist selector stays empty.
+
+## BILLING-RELEASE-210-20261107
+
+- **Scope:** HU-BIL-001/HU-BIL-002/HU-BIL-003/HU-BIL-004 registry selection for Billing 2.1.0.
+- **Tested source:** `05eb5f178c86a390c7012c94c08ef858ede257d8`, after integrating the current origin/develop.
+- **Validation:** 212 tests passed; typecheck and production build passed. Docker image built for local interface deployment.
+- **Limits:** no real IAM/Gateway business acceptance, browser visual acceptance or production deployment is claimed. No credentials or private environment files are included.

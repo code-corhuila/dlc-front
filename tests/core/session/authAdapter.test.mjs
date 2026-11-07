@@ -245,6 +245,8 @@ test('C05: logout drops the access token before revoking with fresh CSRF proof',
   const logout = net.calls.at(-1);
   assert.equal(net.calls.at(-2).key, 'GET /api/v1/auth/csrf');
   assert.equal(header(logout, 'x-csrf-token'), 'proof-1');
+  assert.equal(header(logout, 'content-type'), 'application/json');
+  assert.equal(logout.init.body, '{}');
   assert.equal(header(logout, 'authorization'), null);
   assert.equal(logout.init.credentials, 'same-origin');
 });

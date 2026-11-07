@@ -10,20 +10,36 @@ import {
 } from './core/session/session.ts';
 import { createAuthAdapter } from './core/session/authAdapter.ts';
 import { loadAuthConfig } from './core/session/authConfig.ts';
+import { createLogoutMarker } from './core/session/logoutMarker.ts';
 import {
   CHANNEL_NAME,
+  CONTROL_KEY,
   createSessionControl,
 } from './core/session/sessionControl.ts';
+import type { Establishment } from './core/session/session.ts';
 import { createHttpCapability } from './core/http/capability.ts';
 import { createHttpClient, type HttpClientDeps } from './core/http/client.ts';
 import { createTelemetry } from './core/telemetry/telemetry.ts';
 import { renderFrame } from './layout/frame.ts';
 import { orderNavigation } from './layout/navigation.ts';
-import { renderServiceError, renderUpdateBanner } from './layout/pages.ts';
+import {
+  renderLogoutUnconfirmed,
+  renderServiceError,
+  renderUpdateBanner,
+} from './layout/pages.ts';
 import { renderPublicFrame } from './layout/publicFrame.ts';
 
 const NO_USER = { id: '', name: '', roles: [], permissions: [] };
-type PreviewAuthPort = AuthPort & { demoFetch?: HttpClientDeps['fetch'] };
+type PreviewAuthPort = AuthPort & {
+  demoFetch?: HttpClientDeps['fetch'];
+  remote?: (message: unknown) => 'established' | 'cleared' | null;
+  remoteRecord?: (raw: string | null) => 'established' | 'cleared' | null;
+};
+type AuthHooks = Readonly<{
+  ended: () => void;
+  renewed: (est: Establishment) => void;
+  changed: (kind: 'established' | 'cleared' | null | undefined) => void;
+}>;
 
 /** Without Auth deployment data or the dev double, the session is unavailable. */
 const unavailableAuth: PreviewAuthPort = {
@@ -36,14 +52,13 @@ const unavailableAuth: PreviewAuthPort = {
  * C05: deployments with /auth-config.json use the real Auth adapter; malformed data fails
  * closed. Only when it is absent may the local preview load its development double.
  */
-async function loadAuthPort(
-  onSessionEnded: () => void,
-): Promise<PreviewAuthPort> {
+async function loadAuthPort(hooks: AuthHooks): Promise<PreviewAuthPort> {
   const config = await loadAuthConfig({
     fetch: (url, init) => fetch(url, init),
   });
-  if (config.status === 'configured')
-    return createAuthAdapter({
+  if (config.status === 'configured') {
+    const channel = new BroadcastChannel(CHANNEL_NAME);
+    const adapter = createAuthAdapter({
       fetch: (url, init) => fetch(url, init),
       uuid: () => crypto.randomUUID(),
       now: () => Date.now(),
@@ -56,10 +71,19 @@ async function loadAuthPort(
           getItem: (key) => localStorage.getItem(key),
           setItem: (key, value) => localStorage.setItem(key, value),
         },
-        channel: new BroadcastChannel(CHANNEL_NAME),
+        channel,
       }),
-      onSessionEnded,
+      onSessionEnded: hooks.ended,
+      onRenewed: hooks.renewed,
     });
+    // FC-12: other tabs announce only {generation, kind}; storage events also notify.
+    channel.onmessage = (event) => hooks.changed(adapter.remote(event.data));
+    addEventListener('storage', (event) => {
+      if (event.key === CONTROL_KEY)
+        hooks.changed(adapter.remoteRecord(event.newValue));
+    });
+    return adapter;
+  }
   if (config.status === 'invalid') return unavailableAuth;
   try {
     const url = '/dev-auth.js';
@@ -93,10 +117,57 @@ async function boot() {
   });
   const [registry, auth] = await Promise.all([
     loader.registry(),
-    loadAuthPort(() => session.invalidate('UNAUTHORIZED')),
+    loadAuthPort({
+      ended: () => session.invalidate('UNAUTHORIZED'),
+      renewed: (est) => session.renewed(est),
+      // Cleared elsewhere: clean up here; established elsewhere: serialized restore.
+      changed: (kind) => {
+        if (kind === 'cleared') session.invalidate('LOGOUT');
+        if (kind === 'established') void session.start();
+      },
+    }),
   ]);
-  const session = createSession(auth);
+  const session = createSession(auth, {
+    expiry: {
+      now: () => Date.now(),
+      setTimer: (fn, ms) => setTimeout(fn, ms),
+      clearTimer: (timer) => clearTimeout(timer as number),
+    },
+  });
   await session.start();
+
+  // The shell owns only this container; shell notices on body survive frame swaps.
+  const appRoot = document.createElement('div');
+  appRoot.style.display = 'contents';
+  document.body.prepend(appRoot);
+
+  // C05/FC-11: local sign-out is immediate; an unconfirmed revocation stays visible with
+  // an explicit retry until Auth confirms it. Nothing is retried automatically.
+  // The per-tab marker keeps the notice across reloads until confirmed or a new sign-in.
+  const logoutMarker = createLogoutMarker(sessionStorage);
+  let logoutNotice: HTMLElement | null = null;
+  const hideLogoutNotice = () => {
+    logoutNotice?.remove();
+    logoutNotice = null;
+  };
+  const showLogoutNotice = () => {
+    hideLogoutNotice();
+    logoutNotice = renderLogoutUnconfirmed(document, () => void logout());
+    document.body.append(logoutNotice);
+  };
+  async function logout() {
+    hideLogoutNotice();
+    const result = await session.logout();
+    if (result.ok) return logoutMarker.clear();
+    logoutMarker.mark();
+    showLogoutNotice();
+  }
+  session.subscribe(({ state }) => {
+    if (state !== 'authenticated') return;
+    logoutMarker.clear();
+    hideLogoutNotice();
+  });
+  if (logoutMarker.pending()) showLogoutNotice();
 
   const navigation = registry.ok ? orderNavigation(registry.navigation) : [];
   const currentUser = () => {
@@ -107,7 +178,7 @@ async function boot() {
     user: currentUser(),
     navigation,
     path: location.pathname,
-    onLogout: () => void session.logout(),
+    onLogout: () => void logout(),
     // The owner (Patients) interprets the query; the shell only routes it (C04).
     onSearch: (term) =>
       void shell.request({
@@ -116,7 +187,7 @@ async function boot() {
   });
   if (!registry.ok) {
     // C07: frame plus registry-unavailable state; no arbitrary entries are loaded.
-    document.body.append(frame.root);
+    appRoot.append(frame.root);
     frame.host.replaceChildren(
       renderServiceError(document, 'REGISTRY_UNAVAILABLE', () =>
         location.reload(),
@@ -180,7 +251,7 @@ async function boot() {
               iamSession: Object.freeze({
                 complete: session.complete,
                 logout: session.logout,
-                retryRestore: () => session.start(),
+                retryRestore: () => session.retryRestore(),
               }),
             }
           : {}),
@@ -189,7 +260,7 @@ async function boot() {
   const shell = createShell({
     document,
     frames: { app: frame, public: renderPublicFrame(document) },
-    root: document.body,
+    root: appRoot,
     lifecycle,
     history: browserHistory(window),
     isAuthenticated: () => session.getSnapshot().state === 'authenticated',

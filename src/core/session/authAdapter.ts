@@ -1,5 +1,10 @@
 import type { AuthPort, Establishment } from './session.ts';
-import type { ControlRecord, SessionControl } from './sessionControl.ts';
+import {
+  parseControl,
+  type ControlKind,
+  type ControlRecord,
+  type SessionControl,
+} from './sessionControl.ts';
 
 /**
  * C05 Auth adapter: talks to the same-origin Gateway on behalf of the shell only.
@@ -19,6 +24,8 @@ export type AuthAdapterDeps = Readonly<{
   control?: SessionControl;
   /** A renewal 401 ended the browser session; the shell clears identity (C05). */
   onSessionEnded?: (reason: 'UNAUTHORIZED') => void;
+  /** An ordinary renewal of the same session; only its expiry changes (FC-10). */
+  onRenewed?: (est: Establishment) => void;
   timeoutMs?: number;
   lockTimeoutMs?: number;
 }>;
@@ -195,8 +202,18 @@ export function createAuthAdapter(deps: AuthAdapterDeps) {
   /** Under the lock: end the browser session everywhere and block auto-restoration. */
   function end(): null {
     access = null;
-    control.advance('cleared');
+    seen = Math.max(seen, control.advance('cleared').generation);
     return null;
+  }
+
+  // Highest generation this tab knows; remote news at or below it is stale (FC-12).
+  let seen = 0;
+  /** Another tab changed the session: drop this tab's token and report the change. */
+  function adopt(generation: number, kind: ControlKind): ControlKind | null {
+    if (generation <= seen) return null;
+    seen = generation;
+    access = null;
+    return kind;
   }
 
   /**
@@ -206,6 +223,7 @@ export function createAuthAdapter(deps: AuthAdapterDeps) {
   async function rotate(renewing: boolean): Promise<Establishment | null> {
     const start = control.read();
     if (!start || start.blocked) return (access = null);
+    seen = Math.max(seen, start.generation);
     try {
       const proof = await csrfProof();
       const response =
@@ -224,6 +242,7 @@ export function createAuthAdapter(deps: AuthAdapterDeps) {
       // FC-12: a response that outlived its generation never installs state.
       if (control.read()?.generation !== start.generation)
         return (access = null);
+      if (renewing) deps.onRenewed?.(est);
       return est;
     } catch (error) {
       access = null;
@@ -253,6 +272,29 @@ export function createAuthAdapter(deps: AuthAdapterDeps) {
 
     restore: (): Promise<Establishment | null> => renew(false),
 
+    isBlocked: () => control.read()?.blocked !== false,
+
+    /** BroadcastChannel dlc-session-v1 message: only {generation, kind} is accepted. */
+    remote(message: unknown): ControlKind | null {
+      const m = record(message);
+      if (!m || Object.keys(m).length !== 2) return null;
+      const { generation, kind } = m;
+      if (!Number.isSafeInteger(generation) || (generation as number) < 0)
+        return null;
+      if (kind !== 'established' && kind !== 'cleared') return null;
+      return adopt(generation as number, kind);
+    },
+
+    /** Storage event for dlc-session-control-v1; invalid data fails closed. */
+    remoteRecord(raw: string | null): ControlKind | null {
+      const next = parseControl(raw);
+      if (!next) {
+        access = null;
+        return 'cleared';
+      }
+      return adopt(next.generation, next.blocked ? 'cleared' : 'established');
+    },
+
     /** Protected 401: local access ends now; the block is recorded under the lock. */
     async block(): Promise<void> {
       access = null;
@@ -273,7 +315,7 @@ export function createAuthAdapter(deps: AuthAdapterDeps) {
         if (!response.ok) throw new AuthError('SESSION_UNAVAILABLE');
         const est = await install(response);
         // Deliberate sign-in clears the block and invalidates other tabs' tokens.
-        control.advance('established');
+        seen = Math.max(seen, control.advance('established').generation);
         return est;
       });
     },

@@ -35,6 +35,8 @@ export type AuthPort = Readonly<{
   freshAccessToken?: () => Promise<string | null>;
   /** Protected 401: ends access and blocks automatic restoration across tabs (FC-11). */
   block?: () => Promise<void>;
+  /** True while the shared marker blocks automatic restoration (FC-11). */
+  isBlocked?: () => boolean;
   restore: () => Promise<Establishment | null>;
   complete: (input: {
     operationId: string;
@@ -71,7 +73,18 @@ function sanitize(input: unknown): Establishment | null {
   };
 }
 
-export function createSession(auth: AuthPort) {
+/** Clock and timers for the C05 expiry safeguard; injected by the shell. */
+export type ExpiryClock = Readonly<{
+  now: () => number;
+  setTimer: (fn: () => void, ms: number) => unknown;
+  clearTimer: (timer: unknown) => void;
+}>;
+
+export function createSession(
+  auth: AuthPort,
+  options: { expiry?: ExpiryClock } = {},
+) {
+  let expiryTimer: unknown = null;
   let snapshot: SessionSnapshot = Object.freeze({
     state: 'resolving',
     revision: 0,
@@ -102,7 +115,38 @@ export function createSession(auth: AuthPort) {
       expiresAt: est?.expiresAt ?? null,
       reason,
     });
+    scheduleExpiry();
     for (const listener of [...listeners]) notify(listener);
+  }
+
+  /** C05: at expiry identity is cleared; no expired token is used (UI safeguard only). */
+  function scheduleExpiry() {
+    const clock = options.expiry;
+    if (!clock) return;
+    if (expiryTimer !== null) clock.clearTimer(expiryTimer);
+    expiryTimer = null;
+    if (snapshot.state !== 'authenticated' || !snapshot.expiresAt) return;
+    const revision = snapshot.revision;
+    const ms = Date.parse(snapshot.expiresAt) - clock.now();
+    expiryTimer = clock.setTimer(
+      () => {
+        expiryTimer = null;
+        if (snapshot.revision === revision) publish('expired', 'EXPIRED');
+      },
+      Math.max(0, ms),
+    );
+  }
+
+  async function start() {
+    try {
+      const restored = await auth.restore();
+      if (restored === null) return publish('anonymous', 'NO_SESSION');
+      const est = sanitize(restored);
+      if (est) publish('authenticated', null, est);
+      else publish('unavailable', 'DEPENDENCY_UNAVAILABLE');
+    } catch {
+      publish('unavailable', 'DEPENDENCY_UNAVAILABLE');
+    }
   }
 
   return {
@@ -112,16 +156,15 @@ export function createSession(auth: AuthPort) {
       notify(listener);
       return () => void listeners.delete(listener);
     },
-    async start() {
-      try {
-        const restored = await auth.restore();
-        if (restored === null) return publish('anonymous', 'NO_SESSION');
-        const est = sanitize(restored);
-        if (est) publish('authenticated', null, est);
-        else publish('unavailable', 'DEPENDENCY_UNAVAILABLE');
-      } catch {
-        publish('unavailable', 'DEPENDENCY_UNAVAILABLE');
-      }
+    start,
+    /** Explicit retry: C06 Result with the snapshot; blocked fails locally (C05). */
+    async retryRestore(): Promise<ControlResult> {
+      if (auth.isBlocked?.())
+        return { ok: false, status: 0, error: 'SESSION_UNAVAILABLE' };
+      await start();
+      return snapshot.state === 'unavailable'
+        ? { ok: false, status: 0, error: 'SESSION_UNAVAILABLE' }
+        : { ok: true, status: 200, data: snapshot };
     },
     /** IAM-only completion; the body is passed unchanged to the Auth adapter. */
     async complete(input: {
@@ -157,9 +200,20 @@ export function createSession(auth: AuthPort) {
         return { ok: false, status: 0, error: 'SESSION_UNAVAILABLE' };
       }
     },
-    /** Protected 401 or expiry ends the browser session (C05). */
-    invalidate: (reason: 'UNAUTHORIZED' | 'EXPIRED') =>
+    /** Protected 401, expiry or a logout in another tab ends the browser session (C05). */
+    invalidate: (reason: 'UNAUTHORIZED' | 'EXPIRED' | 'LOGOUT') =>
       publish(reason === 'EXPIRED' ? 'expired' : 'anonymous', reason),
+    /** Ordinary renewal of the same user: only the expiry moves (FC-10, FC-12). */
+    renewed(input: unknown) {
+      const est = sanitize(input);
+      if (
+        !est ||
+        snapshot.state !== 'authenticated' ||
+        est.user.id !== snapshot.user?.id
+      )
+        return;
+      publish('authenticated', null, est);
+    },
   };
 }
 

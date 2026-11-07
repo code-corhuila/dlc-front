@@ -1088,3 +1088,93 @@ width; the mockup chip itself overflows the 1280 px page edge.
 - **Annex H differences:** none.
 - **Limitation:** listening to `dlc-session-v1`/storage events in other tabs, expiry handling,
   `retryRestore` and the "server logout unconfirmed" screen remain for the next increment.
+
+## DEV-FRONT-AUTH-SYNC-001
+
+- **Story:** HU-IAM-001 (`code-corhuila/dlc-docs#47`); issue #1. FC-12 ("old generation or late
+  success after logout") and the expiry part of FC-11.
+- **Change:**
+  - `src/core/session/authAdapter.ts`: `remote(message)` accepts only `{generation, kind}` from
+    BroadcastChannel `dlc-session-v1`; `remoteRecord(raw)` maps storage events of
+    `dlc-session-control-v1` (invalid data fails closed as `cleared`). Generations at or below the
+    highest this tab knows are stale and ignored; newer ones drop this tab's token.
+    `onRenewed` reports an ordinary renewal (not a restore).
+  - `src/core/session/session.ts`: optional expiry clock; at `expiresAt` an authenticated
+    snapshot becomes `expired`/`EXPIRED` with identity cleared. `renewed(est)` moves the expiry for
+    the same user only; it is ignored after the session ended. `invalidate('LOGOUT')` for a logout
+    in another tab.
+  - `src/main.ts`: one shared `BroadcastChannel`, `storage` listener; `cleared` cleans up locally,
+    `established` triggers a serialized restore; wires the expiry clock and `onRenewed`.
+- **TDD:** `tests/core/session/sessionSync.test.mjs` (7 tests) failed first (7 failures:
+  `createSession` had no expiry or `renewed`; the adapter had no `remote`, `remoteRecord` or
+  `onRenewed`). After implementing, 2 still failed because the test clock exposed `now` as a
+  number instead of a function; the double was fixed, not the production code. All pass.
+- **Validation:** typecheck, lint, format check, tests (199), coverage (99.46 % lines, 91.55 %
+  branches), build and `git diff --check` pass. Size 146/400.
+- **Browser check (preview, two tabs, temporary `auth-config.json`):** posting
+  `{generation: 99, kind: 'established'}` on `dlc-session-v1` from tab A made tab B request
+  `/api/v1/auth/csrf` again (1 to 2); posting the same generation again caused no new request
+  (stale). Test data removed afterwards.
+- **FC cases:** FC-12 and FC-11 expiry at unit level; real two-tab login/logout against IAM needs
+  the Gateway.
+- **Annex H differences:** none.
+- **Limitation:** `retryRestore` still returns no C06 Result, and the "server logout unconfirmed"
+  screen is not rendered by the shell; recorded for a follow-up.
+
+## DEV-FRONT-AUTH-RECOVERY-001
+
+- **Story:** HU-IAM-001 (`code-corhuila/dlc-docs#47`); issue #1. Closes the limitations of
+  `DEV-FRONT-AUTH-SYNC-001` (FC-11).
+- **Change:**
+  - `src/core/session/session.ts`: `retryRestore()` resolves the C06 Result (`ok`, status 200,
+    sanitized snapshot as data); when `auth.isBlocked()` is true it fails locally with
+    `SESSION_UNAVAILABLE` without asking Auth; an unavailable Auth also returns
+    `SESSION_UNAVAILABLE`. `start` became a named function so both share it.
+  - `src/core/session/authAdapter.ts`: `isBlocked()` is true for a blocked or invalid marker.
+  - `src/layout/pages.ts`: `renderLogoutUnconfirmed` (`role="alert"`,
+    `data-code="LOGOUT_UNCONFIRMED"`): states that the browser signed out but the server logout
+    was not confirmed, with "Reintentar cierre de sesión"; it never claims revocation.
+  - `src/main.ts`: the frame logout shows that notice when `session.logout()` fails and retries
+    only on the explicit click; IAM's `iamSession.retryRestore` returns the new Result.
+- **TDD:** 3 session tests, 1 adapter test and 1 page test failed first (`retryRestore` and
+  `isBlocked` missing; `renderLogoutUnconfirmed` not exported). All pass after the change.
+- **Validation:** typecheck, lint, format check, tests (204), coverage (99.46 % lines, 91.62 %
+  branches), build and `git diff --check` pass. Size 80/400.
+- **Browser check (preview):** the notice rendered from the built module appears at the bottom
+  with the existing banner style, `role="alert"`, the Spanish text above and a working retry
+  button. A real failed logout was not reproduced: the development double never fails and the
+  real adapter needs the Gateway to sign in first.
+- **FC cases:** FC-11 complete at unit level.
+- **Annex H differences:** none. The notice is not in the mockup; it reuses the update banner
+  style.
+- **Limitation:** after a reload the blocked marker cannot tell a confirmed from an unconfirmed
+  logout (the record holds only `generation` and `blocked`), so the notice is shown only in the
+  page where the logout failed.
+
+## DEV-FRONT-AUTH-LOGOUT-001
+
+- **Story:** HU-IAM-001 (`code-corhuila/dlc-docs#47`); issue #1. Closes the limitation of
+  `DEV-FRONT-AUTH-RECOVERY-001` (FC-11: "shows server logout unconfirmed" across reload).
+- **Change:**
+  - `src/core/session/logoutMarker.ts`: per-tab `sessionStorage` key
+    `dlc-logout-unconfirmed-v1` with the single value `1`; no identity, token or credential.
+    Unexpected values or refused storage never show the notice. The shared
+    `dlc-session-control-v1` record still holds only `{generation, blocked}` (C05).
+  - `src/main.ts`: a failed logout sets the marker and shows the notice; a confirmed logout or a
+    new authenticated session clears it; on load a pending marker shows the notice again.
+  - `src/main.ts`: the shell now owns a dedicated container (`display: contents`) instead of
+    `document.body`. Before, every frame swap replaced all body children and removed shell
+    notices (the logout notice of `DEV-FRONT-AUTH-RECOVERY-001` and the update banner).
+- **TDD:** `tests/core/session/logoutMarker.test.mjs` (3 tests) failed first with
+  `ERR_MODULE_NOT_FOUND`; all pass after the change. The container defect was found in the
+  browser check (notice absent after reload with the marker set) and fixed before the PR.
+- **Validation:** typecheck, lint, format check, tests (207), coverage, build and
+  `git diff --check` pass. Size 66/400.
+- **Browser check (preview):** with the marker set, reloading `/` shows the notice; navigating to
+  `/login` keeps it; "Reintentar cierre de sesión" (development double confirms logout) removes
+  the notice and the marker. The frame layout is unchanged.
+- **FC cases:** FC-11 complete.
+- **Annex H differences:** none. Decision: the unconfirmed state is a per-tab marker, because
+  C05 restricts the shared record to `{generation, blocked}`.
+- **Limitation:** the notice is per tab; another tab of the same browser stays blocked but does
+  not show it.

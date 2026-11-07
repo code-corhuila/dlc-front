@@ -12,7 +12,7 @@ services:
       IAM_UPSTREAM: ${IAM_UPSTREAM:-http://iam-portal-demo}
       PATIENT_UPSTREAM: ${PATIENT_UPSTREAM:-http://patient-portal-demo}
       CLINICAL_UPSTREAM: ${CLINICAL_UPSTREAM:-http://clinical-portal-demo}
-      APPOINTMENTS_UPSTREAM: ${APPOINTMENTS_UPSTREAM:-http://appointments-portal-demo}
+      APPOINTMENTS_UPSTREAM: ${APPOINTMENTS_UPSTREAM:-http://appointments-portal-dlc-front}
       BILLING_UPSTREAM: ${BILLING_UPSTREAM:-http://billing-portal-demo}
       # The compositor strips /api/v1 before proxying, so the Gateway base keeps it.
       GATEWAY_UPSTREAM: ${GATEWAY_UPSTREAM:-http://dlc-api-gateway:8080/api/v1}

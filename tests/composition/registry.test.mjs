@@ -198,8 +198,8 @@ test('Billing deployment registry publishes the demo entry and navigation', asyn
   const billing = result.portals.billing;
 
   assert.equal(billing.status, 'available');
-  assert.equal(billing.release, '2.0.0');
-  assert.equal(billing.entryUrl, '/portals/billing/2.0.0/entry.js');
+  assert.equal(billing.release, '2.1.0');
+  assert.equal(billing.entryUrl, '/portals/billing/2.1.0/entry.js');
   assert.deepEqual(
     billing.navigation.map(({ id, path }) => ({ id, path })),
     [

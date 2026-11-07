@@ -105,3 +105,10 @@ test('C06: HU-CLN-003 Clinical Analytics is a catalogued protected read', () => 
     'INVALID_REQUEST',
   );
 });
+
+test('C06: the IAM dentist directory (dlc-docs#164) is catalogued for portals', () => {
+  const directory = ok('appointments', 'GET', '/api/v1/auth/dentists');
+  assert.equal(directory.ok, true);
+  assert.equal(directory.operation.operationId, 'AuthListdentists');
+  assert.equal(directory.operation.public, false);
+});

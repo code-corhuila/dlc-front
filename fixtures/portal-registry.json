@@ -48,8 +48,8 @@
     {
       "portalId": "appointments",
       "repository": "dlc-appointments-portal",
-      "release": "0.1.0-demo",
-      "entryUrl": "/portals/appointments/0.1.0-demo/entry.js",
+      "release": "2.1.0",
+      "entryUrl": "/portals/appointments/2.1.0/entry.js",
       "navigation": [
         {
           "id": "appointments",

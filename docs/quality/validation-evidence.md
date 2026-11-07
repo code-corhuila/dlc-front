@@ -1318,3 +1318,25 @@ width; the mockup chip itself overflows the 1280 px page edge.
 - **TDD:** documentation change; verified with `npm run format:check` and `git diff --check`.
 - **Limitation:** `fixtures/portal-registry.json` still lists `-demo` portal releases until the
   portals publish real ones.
+
+## DEV-FRONT-APPOINTMENTS-RELEASE-001
+
+- **Story:** HU-APT-001, HU-APT-003, HU-APT-004 (`code-corhuila/dlc-docs#54`, `#56`, `#69`);
+  contract `code-corhuila/dlc-docs#164`.
+- **Change:**
+  - `src/core/http/__generated__/catalog.ts`: regenerated from dlc-docs `e85860a`; adds
+    `AuthListdentists` (`GET /api/v1/auth/dentists`, protected, not idempotent).
+  - `fixtures/portal-registry.json`: `appointments` release `2.1.0`
+    (`/portals/appointments/2.1.0/entry.js`), the real release of `dlc-appointments-portal`.
+  - `deploy/compose.yml`, `.env.example`: `APPOINTMENTS_UPSTREAM` defaults to
+    `http://appointments-portal-dlc-front`.
+- **TDD:** RED first: the catalog test for `AuthListdentists` and the registry test for `2.1.0`
+  failed (2 failures, 210 passing); GREEN after regeneration and registration (212 passing).
+- **Validation:** tests, typecheck, lint, build, `git diff --check` pass; Prettier passes on the
+  changed files (`src/core/session/authAdapter.ts` was already unformatted on `develop`).
+  Browser (local real stack, 2026-11-07): sign-in through IAM, Calendar reads
+  `GET /api/v1/appointments` 200 and Clinical assignments `GET /api/v1/clinical-assignments` 200.
+- **FC cases:** C01 registry, C06 catalogue.
+- **Annex H differences:** none.
+- **Limitation:** `dlc-iam-api` must implement `GET /api/v1/auth/dentists`; until then the
+  Gateway call fails and the scheduling dentist selector stays empty.

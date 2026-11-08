@@ -68,6 +68,15 @@
             "rolesAny": [],
             "permissionsAll": []
           }
+        },
+        {
+          "id": "clinical-assignments",
+          "label": "Asignaciones clínicas",
+          "path": "/app/appointments/clinical-assignments",
+          "visibility": {
+            "rolesAny": ["ADMINISTRATOR", "SECRETARY_ASSISTANT"],
+            "permissionsAll": []
+          }
         }
       ]
     },

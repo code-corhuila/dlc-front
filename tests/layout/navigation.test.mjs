@@ -97,6 +97,15 @@ const MOCKUP_MENU = [
     path: '/app/appointments/availability',
     visibility: { rolesAny: [], permissionsAll: [] },
   },
+  {
+    id: 'clinical-assignments',
+    label: 'Asignaciones clínicas',
+    path: '/app/appointments/clinical-assignments',
+    visibility: {
+      rolesAny: ['ADMINISTRATOR', 'SECRETARY_ASSISTANT'],
+      permissionsAll: [],
+    },
+  },
 ];
 
 test('mockup sidebar order: owner sub-areas sit next to their owners', () => {
@@ -108,10 +117,40 @@ test('mockup sidebar order: owner sub-areas sit next to their owners', () => {
       'procedures',
       'appointments',
       'availability',
+      'clinical-assignments',
       'clinical',
       'billing',
       'administration',
     ],
+  );
+});
+
+test('registry: Appointments offers clinical assignments to reception roles only', async () => {
+  const { readFile } = await import('node:fs/promises');
+  const registry = JSON.parse(
+    await readFile(
+      new URL('../../fixtures/portal-registry.json', import.meta.url),
+      'utf8',
+    ),
+  );
+  const appointments = registry.portals.find(
+    (portal) => portal.portalId === 'appointments',
+  );
+  const item = appointments.navigation.find(
+    (entry) => entry.id === 'clinical-assignments',
+  );
+  assert.deepEqual(
+    item,
+    MOCKUP_MENU.find((entry) => entry.id === 'clinical-assignments'),
+  );
+  assert.deepEqual(
+    visibleItems([item], { roles: ['DENTIST'], permissions: [] }),
+    [],
+  );
+  assert.equal(
+    visibleItems([item], { roles: ['SECRETARY_ASSISTANT'], permissions: [] })
+      .length,
+    1,
   );
 });
 
@@ -121,4 +160,8 @@ test('C04: the most specific owner entry is active', () => {
   assert.equal(active('/app/billing/invoices/7'), 'billing');
   assert.equal(active('/app/appointments/availability'), 'availability');
   assert.equal(active('/app/appointments/new'), 'appointments');
+  assert.equal(
+    active('/app/appointments/clinical-assignments'),
+    'clinical-assignments',
+  );
 });

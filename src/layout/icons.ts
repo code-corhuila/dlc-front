@@ -22,6 +22,12 @@ export const ICONS: Readonly<Record<string, string>> = {
   availability:
     '<circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/>' +
     stroked('M12 7v5l3 2'),
+  // Clipboard with a check for the Appointments "Asignaciones clínicas" entry.
+  'clinical-assignments': stroked(
+    'M9 4h6a1 1 0 0 1 1 1v1H8V5a1 1 0 0 1 1-1z',
+    'M8 5H6a1 1 0 0 0-1 1v14a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V6a1 1 0 0 0-1-1h-2',
+    'm9 14 2 2 4-4',
+  ),
   clinical: filled(
     'M7 3C4.5 3 3 5 3 7.5c0 2 1 3.5 1.5 5.5.5 2.5 1 8 3 8 1.5 0 1.5-5 4.5-5s3 5 4.5 5c2 0 2.5-5.5 3-8 .5-2 1.5-3.5 1.5-5.5C21 5 19.5 3 17 3c-2 0-3 1-5 1S9 3 7 3z',
   ),

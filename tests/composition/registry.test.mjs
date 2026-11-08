@@ -177,6 +177,10 @@ test('Appointments deployment registry publishes the demo entry and navigation',
     [
       { id: 'appointments', path: '/app/appointments/calendar' },
       { id: 'availability', path: '/app/appointments/availability' },
+      {
+        id: 'clinical-assignments',
+        path: '/app/appointments/clinical-assignments',
+      },
     ],
   );
   assert.equal(result.portals.clinical.status, 'available');

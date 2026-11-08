@@ -10,7 +10,7 @@ services:
       dockerfile: deploy/Dockerfile
     environment:
       IAM_UPSTREAM: ${IAM_UPSTREAM:-http://iam-portal-demo}
-      PATIENT_UPSTREAM: ${PATIENT_UPSTREAM:-http://patient-portal-demo}
+      PATIENT_UPSTREAM: ${PATIENT_UPSTREAM:-http://patient-portal}
       CLINICAL_UPSTREAM: ${CLINICAL_UPSTREAM:-http://clinical-portal-demo}
       APPOINTMENTS_UPSTREAM: ${APPOINTMENTS_UPSTREAM:-http://appointments-portal-dlc-front}
       BILLING_UPSTREAM: ${BILLING_UPSTREAM:-http://billing-portal-demo}

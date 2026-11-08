@@ -31,8 +31,8 @@
     {
       "portalId": "patient",
       "repository": "dlc-patient-portal",
-      "release": "0.1.0-demo",
-      "entryUrl": "/portals/patient/0.1.0-demo/entry.js",
+      "release": "1.0.0",
+      "entryUrl": "/portals/patient/1.0.0/entry.js",
       "navigation": [
         {
           "id": "patients",

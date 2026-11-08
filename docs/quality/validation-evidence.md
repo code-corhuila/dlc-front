@@ -1380,3 +1380,9 @@ width; the mockup chip itself overflows the 1280 px page edge.
   build, `git diff --check` and the size gate (16/400).
 - **Limitation:** IAM still lists `0.1.0-local`; `fixtures/portal-registry.clinical-live.json`
   now duplicates the default registry for Clinical.
+- **Browser verification (2026-11-08, real stack):** `dlc-front` (branch `chore/clinical-real-release-2`) at `:8081` with this release `0.1.0`, `dlc-api-gateway`, `dlc-iam-api`, `dlc-patient-api`, `dlc-appointments-api` from `develop` and `dlc-clinical-api` with ADR-019 (`code-corhuila/dlc-clinical-api#124`), on Postgres and MongoDB migrated by their `-db` repositories.
+  - A Dentist registered by the Administrator signed in through the IAM portal; the clinical home listed the assigned patient from `GET /clinical-records`, `GET /appointments` and `GET /patients/{id}` (all `200`).
+  - The record showed the patient header and timeline; "Nueva entrada" sent `POST /clinical-records/{id}/entries` (`201`) and the evolution appeared.
+  - The Administrator read the same record with both evolutions and no write controls.
+  - The dashboard showed "Aún no hay datos de analítica": no projection exists because the Appointments relay was off.
+  - Local setup notes: the bootstrap Administrator and the Dentist e-mail verification were set in SQL (the IAM SMTP adapter requires direct TLS, which the local mail catcher lacks).

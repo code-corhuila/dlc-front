@@ -1361,3 +1361,28 @@ width; the mockup chip itself overflows the 1280 px page edge.
 - **FC cases:** C01 registry, C04 portal proxy.
 - **Annex H differences:** none.
 - **Limitation:** `clinical` remains `0.1.0-demo` until its portal publishes a real release.
+
+## DEV-FRONT-CLINICAL-REAL-001
+
+- **Story:** HU-IAM-001 (`code-corhuila/dlc-docs#47`); issue #1. Next increment 1 of the spec:
+  register the real portal releases.
+- **Change:**
+  - `fixtures/portal-registry.json`: Clinical release `0.1.0` at
+    `/portals/clinical/0.1.0/entry.js`, the real build of `dlc-clinical-portal`
+    (`code-corhuila/dlc-clinical-portal#132` removes its demo build).
+  - `deploy/compose.yml` and `.env.example`: `CLINICAL_UPSTREAM` defaults to the
+    `clinical-portal-dlc-front` container; `scripts/preview.mjs`, `.env.example` and the README
+    use its port `4173` instead of the demo port `4175`.
+- **TDD:** genuine RED: the new `tests/scripts/clinical-deployment.test.mjs` failed on the
+  `0.1.0-demo` release, the `clinical-portal-demo` upstream and the `4175` origin. Two
+  registry tests that pinned Clinical to `0.1.0-demo` now expect `0.1.0`.
+- **Validation:** typecheck, lint, format, `npm run test:coverage` (214 tests, 99.47 % of lines),
+  build, `git diff --check` and the size gate (16/400).
+- **Limitation:** IAM still lists `0.1.0-local`; `fixtures/portal-registry.clinical-live.json`
+  now duplicates the default registry for Clinical.
+- **Browser verification (2026-11-08, real stack):** `dlc-front` (branch `chore/clinical-real-release-2`) at `:8081` with this release `0.1.0`, `dlc-api-gateway`, `dlc-iam-api`, `dlc-patient-api`, `dlc-appointments-api` from `develop` and `dlc-clinical-api` with ADR-019 (`code-corhuila/dlc-clinical-api#124`), on Postgres and MongoDB migrated by their `-db` repositories.
+  - A Dentist registered by the Administrator signed in through the IAM portal; the clinical home listed the assigned patient from `GET /clinical-records`, `GET /appointments` and `GET /patients/{id}` (all `200`).
+  - The record showed the patient header and timeline; "Nueva entrada" sent `POST /clinical-records/{id}/entries` (`201`) and the evolution appeared.
+  - The Administrator read the same record with both evolutions and no write controls.
+  - The dashboard showed "Aún no hay datos de analítica": no projection exists because the Appointments relay was off.
+  - Local setup notes: the bootstrap Administrator and the Dentist e-mail verification were set in SQL (the IAM SMTP adapter requires direct TLS, which the local mail catcher lacks).

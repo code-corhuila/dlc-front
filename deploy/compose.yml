@@ -10,7 +10,7 @@ services:
       dockerfile: deploy/Dockerfile
     environment:
       IAM_UPSTREAM: ${IAM_UPSTREAM:-http://iam-portal-demo}
-      PATIENT_UPSTREAM: ${PATIENT_UPSTREAM:-http://patient-portal-demo}
+      PATIENT_UPSTREAM: ${PATIENT_UPSTREAM:-http://patient-portal}
       CLINICAL_UPSTREAM: ${CLINICAL_UPSTREAM:-http://clinical-portal-demo}
       APPOINTMENTS_UPSTREAM: ${APPOINTMENTS_UPSTREAM:-http://appointments-portal-dlc-front}
       BILLING_UPSTREAM: ${BILLING_UPSTREAM:-http://billing-portal-demo}
@@ -27,7 +27,7 @@ services:
       - '${FRONT_PORT:-8080}:80'
     volumes:
       # Deployment data: the portal registry.
-      - ../fixtures:/usr/share/nginx/deployment:ro
+      - ${PORTAL_REGISTRY_FILE:-../fixtures/portal-registry.json}:/usr/share/nginx/deployment/portal-registry.json:ro
       # {issuer, audience} matching IAM_JWT_ISSUER and IAM_JWT_AUDIENCE of the same stage.
       - ${AUTH_CONFIG_FILE:?Set AUTH_CONFIG_FILE to this stage's auth-config.json}:/usr/share/nginx/auth/auth-config.json:ro
     networks:

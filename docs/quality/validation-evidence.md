@@ -1347,3 +1347,24 @@ width; the mockup chip itself overflows the 1280 px page edge.
 - **Tested source:** `05eb5f178c86a390c7012c94c08ef858ede257d8`, after integrating the current origin/develop.
 - **Validation:** 212 tests passed; typecheck and production build passed. Docker image built for local interface deployment.
 - **Limits:** no real IAM/Gateway business acceptance, browser visual acceptance or production deployment is claimed. No credentials or private environment files are included.
+
+## DEV-FRONT-PATIENTS-RELEASE-001
+
+- **Story:** HU-PAT-001 (`code-corhuila/dlc-docs#53`).
+- **Change:**
+  - `fixtures/portal-registry.json` and `fixtures/portal-registry.clinical-live.json`: `patient`
+    release `1.0.0` (`/portals/patient/1.0.0/entry.js`). This is the real release of
+    `dlc-patient-portal`, which reads and writes only through the Patients API (dlc-patient-portal #36–#39).
+  - `deploy/compose.yml`, `.env.example`: `PATIENT_UPSTREAM` defaults to `http://patient-portal`,
+    the renamed Compose service of that repository.
+- **TDD:** RED first: the Patients and IAM registry tests expecting `1.0.0` failed (2 failures,
+  211 passing). GREEN after registration: 213 passing.
+- **Validation:** `npm test`, `npm run lint` and `npm run build` pass.
+  - Browser, local real stack, 2026-11-08: PostgreSQL from `dlc-infra-postgres` with the owner
+    migrations of `dlc-iam-db`, `dlc-patient-db` and `dlc-appointments-db`.
+  - Signed in as an IAM administrator; the shell loads `/portals/patient/1.0.0/entry.js` (200).
+  - `GET /api/v1/patients` returns 200 and lists only API-registered patients.
+  - `POST /api/v1/patients` returned 201 on the previous release with the same API page.
+- **FC cases:** C01 registry, C04 portal proxy.
+- **Annex H differences:** none.
+- **Limitation:** `clinical` remains `0.1.0-demo` until its portal publishes a real release.

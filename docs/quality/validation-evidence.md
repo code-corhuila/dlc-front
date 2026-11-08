@@ -1386,3 +1386,11 @@ width; the mockup chip itself overflows the 1280 px page edge.
   - The Administrator read the same record with both evolutions and no write controls.
   - The dashboard showed "Aún no hay datos de analítica": no projection exists because the Appointments relay was off.
   - Local setup notes: the bootstrap Administrator and the Dentist e-mail verification were set in SQL (the IAM SMTP adapter requires direct TLS, which the local mail catcher lacks).
+
+## DEV-FRONT-NAV-ASSIGNMENTS-001
+
+- **Story:** HU-APT clinical assignments (Appointments `GET/POST /clinical-assignments`, roles ADMINISTRATOR and SECRETARY_ASSISTANT). Found in the real front run: the page `/app/appointments/clinical-assignments` worked but no sidebar entry led to it.
+- **Change:** both registries (`fixtures/portal-registry.json`, `fixtures/portal-registry.clinical-live.json`) publish the Appointments entry `clinical-assignments` ("Asignaciones clínicas"), visible to ADMINISTRATOR and SECRETARY_ASSISTANT; `ORDER` places it after "Horarios y Slots"; a clipboard icon.
+- **TDD:** genuine RED: the ordering test and the new registry test failed; then the registry and icon tests asked for the entry and its icon.
+- **Validation:** typecheck, lint, `npm test` (217), `npm run test:coverage`, `git diff --check`. `prettier --check` reports only `src/core/session/authAdapter.ts`, unchanged by this increment.
+- **Limitation:** browser and mockup comparison pending; the local stack is paused at the owner's request. The mockup has no assignments entry, so the label follows the page title.

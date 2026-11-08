@@ -45,6 +45,12 @@ Step-by-step rules for portal teams: `docs/integration/portal-integration-guide.
 | `scripts/` | Build helpers, local preview server, PR gates |
 
 `fixtures/` is never copied to `dist/` or into the image and never reaches `main`.
+For local integration with the real Clinical API, set `PORTAL_REGISTRY_FILE` to
+`fixtures/portal-registry.clinical-live.json` and `CLINICAL_UPSTREAM` to
+`http://clinical-portal-dlc-front`. Start that portal's real Compose service
+before the front. The default registry still selects the synthetic demo.
+See the `dlc-docs/10-devops/iam-patients-clinical-local.md` runbook for the
+owner APIs, migrations and service-token setup.
 
 ## Run
 

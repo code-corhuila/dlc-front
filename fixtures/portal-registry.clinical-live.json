@@ -65,7 +65,7 @@
           "label": "Horarios y Slots",
           "path": "/app/appointments/availability",
           "visibility": {
-            "rolesAny": [],
+            "rolesAny": ["ADMINISTRATOR", "SECRETARY_ASSISTANT"],
             "permissionsAll": []
           }
         },

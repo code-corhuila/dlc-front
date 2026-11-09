@@ -125,6 +125,35 @@ test('mockup sidebar order: owner sub-areas sit next to their owners', () => {
   );
 });
 
+test('registry: Appointments availability is managed by reception roles only', async () => {
+  const { readFile } = await import('node:fs/promises');
+  for (const file of [
+    'portal-registry.json',
+    'portal-registry.clinical-live.json',
+  ]) {
+    const registry = JSON.parse(
+      await readFile(
+        new URL(`../../fixtures/${file}`, import.meta.url),
+        'utf8',
+      ),
+    );
+    const appointments = registry.portals.find(
+      (portal) => portal.portalId === 'appointments',
+    );
+    const item = appointments.navigation.find(
+      (entry) => entry.id === 'availability',
+    );
+    assert.deepEqual(item.visibility, {
+      rolesAny: ['ADMINISTRATOR', 'SECRETARY_ASSISTANT'],
+      permissionsAll: [],
+    });
+    assert.deepEqual(
+      visibleItems([item], { roles: ['DENTIST'], permissions: [] }),
+      [],
+    );
+  }
+});
+
 test('registry: Appointments offers clinical assignments to reception roles only', async () => {
   const { readFile } = await import('node:fs/promises');
   const registry = JSON.parse(

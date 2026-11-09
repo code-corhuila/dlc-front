@@ -1402,3 +1402,11 @@ width; the mockup chip itself overflows the 1280 px page edge.
 - **TDD:** genuine RED: the new catalog test failed against the previous catalogue (7 pass, 1 fail), green after regeneration.
 - **Validation:** typecheck, lint, `npm test` (218), `git diff --check`; `prettier --check` reports only `src/core/session/authAdapter.ts`, unchanged here.
 - **Limitation:** browser verification pending until the Gateway route (dlc-api-gateway) is deployed.
+
+## DEV-FRONT-NAV-AVAILABILITY-ROLES-001
+
+- **Story:** HU-APT availability (`PUT /dentists/{id}/availability`: ADMINISTRATOR and SECRETARY_ASSISTANT only). Found in the real front run: a Dentist saw "Horarios y Slots" in the sidebar, although saving answers 403.
+- **Change:** both registries publish the Appointments `availability` entry for ADMINISTRATOR and SECRETARY_ASSISTANT only.
+- **TDD:** genuine RED: the new registry test failed (entry visible to every role), green after the change.
+- **Validation:** typecheck, lint, `npm test` (219), `git diff --check`.
+- **Browser (local stack, Dentist):** the sidebar shows Dashboard, Pacientes, Procedimientos, Citas, Historia clínica, Facturación and Mis sesiones, without "Horarios y Slots".

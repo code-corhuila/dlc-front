@@ -1394,3 +1394,19 @@ width; the mockup chip itself overflows the 1280 px page edge.
 - **TDD:** genuine RED: the ordering test and the new registry test failed; then the registry and icon tests asked for the entry and its icon.
 - **Validation:** typecheck, lint, `npm test` (217), `npm run test:coverage`, `git diff --check`. `prettier --check` reports only `src/core/session/authAdapter.ts`, unchanged by this increment.
 - **Limitation:** browser and mockup comparison pending; the local stack is paused at the owner's request. The mockup has no assignments entry, so the label follows the page title.
+
+## DEV-FRONT-CATALOG-PENDING-PRICES-001
+
+- **Story:** HU-BIL-002 / HU-BIL-004; dlc-docs#169 (ADR-015 decision 6, Billing `GET /encounter-accounts/pending-prices`) and dlc-docs#170 (Gateway exposure).
+- **Change:** `src/core/http/__generated__/catalog.ts` regenerated with `scripts/generate-catalog.mjs` from dlc-docs `eb037d9`: one new protected read, `BillingListpendingpriceencounters`; the Billing portal's "Pendientes de precio" tab (dlc-billing-portal#117) needs it to pass C06.
+- **TDD:** genuine RED: the new catalog test failed against the previous catalogue (7 pass, 1 fail), green after regeneration.
+- **Validation:** typecheck, lint, `npm test` (218), `git diff --check`; `prettier --check` reports only `src/core/session/authAdapter.ts`, unchanged here.
+- **Limitation:** browser verification pending until the Gateway route (dlc-api-gateway) is deployed.
+
+## DEV-FRONT-NAV-AVAILABILITY-ROLES-001
+
+- **Story:** HU-APT availability (`PUT /dentists/{id}/availability`: ADMINISTRATOR and SECRETARY_ASSISTANT only). Found in the real front run: a Dentist saw "Horarios y Slots" in the sidebar, although saving answers 403.
+- **Change:** both registries publish the Appointments `availability` entry for ADMINISTRATOR and SECRETARY_ASSISTANT only.
+- **TDD:** genuine RED: the new registry test failed (entry visible to every role), green after the change.
+- **Validation:** typecheck, lint, `npm test` (219), `git diff --check`.
+- **Browser (local stack, Dentist):** the sidebar shows Dashboard, Pacientes, Procedimientos, Citas, Historia clínica, Facturación and Mis sesiones, without "Horarios y Slots".

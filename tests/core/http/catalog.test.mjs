@@ -112,3 +112,14 @@ test('C06: the IAM dentist directory (dlc-docs#164) is catalogued for portals', 
   assert.equal(directory.operation.operationId, 'AuthListdentists');
   assert.equal(directory.operation.public, false);
 });
+
+test('C06: the Billing pending-price read (dlc-docs#169/#170) is catalogued for portals', () => {
+  const read = ok(
+    'billing',
+    'GET',
+    '/api/v1/encounter-accounts/pending-prices',
+  );
+  assert.equal(read.ok, true);
+  assert.equal(read.operation.operationId, 'BillingListpendingpriceencounters');
+  assert.equal(read.operation.public, false);
+});

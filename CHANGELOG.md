@@ -9,10 +9,10 @@ tagged `v<version>` after the merge. Nothing is merged between permanent branche
 
 ## [Unreleased]
 
-## [2.0.0] - 2026-10-14
+## [3.0.0] - 2026-11-14
 
 MVP 2: the cross-cutting compositor (ADR-011, composition contract v1), the common frame and the demo portals of every bounded
-context. Released through `release/2.0.0` (59 commits re-applied from `qa`), tagged `v2.0.0` after the merge.
+context. No release on `main` yet; this section becomes `[2.0.0] - <merge date>` inside `release/2.0.0`.
 
 ### Added
 

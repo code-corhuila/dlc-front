@@ -31,8 +31,8 @@
     {
       "portalId": "patient",
       "repository": "dlc-patient-portal",
-      "release": "0.1.0-demo",
-      "entryUrl": "/portals/patient/0.1.0-demo/entry.js",
+      "release": "1.0.0",
+      "entryUrl": "/portals/patient/1.0.0/entry.js",
       "navigation": [
         {
           "id": "patients",
@@ -48,8 +48,8 @@
     {
       "portalId": "appointments",
       "repository": "dlc-appointments-portal",
-      "release": "0.1.0-demo",
-      "entryUrl": "/portals/appointments/0.1.0-demo/entry.js",
+      "release": "2.1.0",
+      "entryUrl": "/portals/appointments/2.1.0/entry.js",
       "navigation": [
         {
           "id": "appointments",
@@ -65,7 +65,16 @@
           "label": "Horarios y Slots",
           "path": "/app/appointments/availability",
           "visibility": {
-            "rolesAny": [],
+            "rolesAny": ["ADMINISTRATOR", "SECRETARY_ASSISTANT"],
+            "permissionsAll": []
+          }
+        },
+        {
+          "id": "clinical-assignments",
+          "label": "Asignaciones clínicas",
+          "path": "/app/appointments/clinical-assignments",
+          "visibility": {
+            "rolesAny": ["ADMINISTRATOR", "SECRETARY_ASSISTANT"],
             "permissionsAll": []
           }
         }
@@ -100,8 +109,8 @@
     {
       "portalId": "clinical",
       "repository": "dlc-clinical-portal",
-      "release": "0.1.0-demo",
-      "entryUrl": "/portals/clinical/0.1.0-demo/entry.js",
+      "release": "0.1.0",
+      "entryUrl": "/portals/clinical/0.1.0/entry.js",
       "navigation": [
         {
           "id": "dashboard",

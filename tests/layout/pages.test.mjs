@@ -9,6 +9,7 @@ import {
   renderUnavailable,
   markAvailable,
   renderUpdateBanner,
+  renderLogoutUnconfirmed,
 } from '../../src/layout/pages.ts';
 import { BASELINE_NAVIGATION } from '../../src/layout/navigation.ts';
 
@@ -130,4 +131,15 @@ test('registry change banner offers an explicit reload', () => {
   assert.match(banner.textContent, /nueva versión/);
   banner.querySelector('button').click();
   assert.equal(reloads, 1);
+});
+
+test('FC-11: unconfirmed server logout is announced truthfully with an explicit retry', () => {
+  let retries = 0;
+  const notice = renderLogoutUnconfirmed(doc(), () => (retries += 1));
+  assert.equal(notice.getAttribute('role'), 'alert');
+  assert.equal(notice.dataset.code, 'LOGOUT_UNCONFIRMED');
+  assert.match(notice.textContent, /no pudimos confirmar el cierre de sesión/i);
+  assert.doesNotMatch(notice.textContent, /sesión cerrada correctamente/i);
+  notice.querySelector('button').click();
+  assert.equal(retries, 1);
 });

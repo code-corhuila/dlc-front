@@ -170,16 +170,17 @@ test('Appointments deployment registry publishes the demo entry and navigation',
   assert.equal(result.ok, true);
   const appointments = result.portals.appointments;
   assert.equal(appointments.status, 'available');
-  assert.equal(appointments.release, '0.1.0-demo');
-  assert.equal(
-    appointments.entryUrl,
-    '/portals/appointments/0.1.0-demo/entry.js',
-  );
+  assert.equal(appointments.release, '2.1.0');
+  assert.equal(appointments.entryUrl, '/portals/appointments/2.1.0/entry.js');
   assert.deepEqual(
     appointments.navigation.map(({ id, path }) => ({ id, path })),
     [
       { id: 'appointments', path: '/app/appointments/calendar' },
       { id: 'availability', path: '/app/appointments/availability' },
+      {
+        id: 'clinical-assignments',
+        path: '/app/appointments/clinical-assignments',
+      },
     ],
   );
   assert.equal(result.portals.clinical.status, 'available');

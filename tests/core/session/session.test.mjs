@@ -93,8 +93,8 @@ test('C05: completion establishes; failure keeps anonymous; logout clears first'
   const session = createSession(port);
   await session.start();
   const done = await session.complete({
-    operationId: 'AuthVerifyMFAchallenge',
-    body: { code: '000000' },
+    operationId: 'AuthLogin',
+    body: { email: 'staff@example.test', password: 'placeholder' },
   });
   assert.equal(done.ok, true);
   assert.equal(done.data.state, 'authenticated');
@@ -107,7 +107,7 @@ test('C05: completion establishes; failure keeps anonymous; logout clears first'
   const failing = createSession(auth({ complete: new Error('bad proof') }));
   await failing.start();
   const result = await failing.complete({
-    operationId: 'AuthVerifyMFAchallenge',
+    operationId: 'AuthLogin',
     body: {},
   });
   assert.equal(result.ok, false);
@@ -137,6 +137,22 @@ test('C05: unknown completion never reaches Auth', async () => {
   assert.deepEqual(port.calls, ['restore']);
 });
 
+test('ADR-016: removed MFA completions never reach Auth', async () => {
+  const port = auth();
+  const session = createSession(port);
+  await session.start();
+  for (const operationId of [
+    'AuthVerifyMFAchallenge',
+    'AuthConfirmMFAenrollment',
+  ]) {
+    const result = await session.complete({ operationId, body: {} });
+    assert.equal(result.ok, false, operationId);
+    assert.equal(result.error, 'INVALID_REQUEST', operationId);
+  }
+  assert.deepEqual(port.calls, ['restore']);
+  assert.equal(session.getSnapshot().state, 'anonymous');
+});
+
 test('C05: logout outage is reported as unconfirmed, never as revoked', async () => {
   const session = createSession(auth({ restore: dentist, failLogout: true }));
   await session.start();
@@ -157,4 +173,36 @@ test('C02/C05: scoped capability is read-only and released with the mount', asyn
   await session.start();
   assert.deepEqual(seen, ['resolving']);
   assert.throws(() => scoped.getSnapshot(), /CANCELLED/);
+});
+
+test('C05: retryRestore resolves the C06 Result with the sanitized snapshot', async () => {
+  const session = createSession(auth({ restore: dentist }));
+  const result = await session.retryRestore();
+  assert.equal(result.ok, true);
+  assert.equal(result.status, 200);
+  assert.equal(result.data, session.getSnapshot());
+  assert.equal(result.data.state, 'authenticated');
+});
+
+test('FC-11: a blocked retryRestore fails locally without asking Auth', async () => {
+  const port = { ...auth({ restore: dentist }), isBlocked: () => true };
+  const session = createSession(port);
+  const result = await session.retryRestore();
+  assert.deepEqual(result, {
+    ok: false,
+    status: 0,
+    error: 'SESSION_UNAVAILABLE',
+  });
+  assert.deepEqual(port.calls, []);
+});
+
+test('C05: retryRestore reports an unavailable Auth as SESSION_UNAVAILABLE', async () => {
+  const session = createSession(auth({ restore: new Error('down') }));
+  const result = await session.retryRestore();
+  assert.deepEqual(result, {
+    ok: false,
+    status: 0,
+    error: 'SESSION_UNAVAILABLE',
+  });
+  assert.equal(session.getSnapshot().state, 'unavailable');
 });

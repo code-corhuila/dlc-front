@@ -49,12 +49,7 @@ test('C05/C06: session controls are excluded from the generic HTTP capability', 
     ok('clinical', 'POST', '/api/v1/auth/login').error,
     'INVALID_REQUEST',
   );
-  for (const path of [
-    '/api/v1/auth/refresh',
-    '/api/v1/auth/logout',
-    '/api/v1/auth/mfa-verifications',
-    '/api/v1/auth/mfa-enrollment-confirmations',
-  ])
+  for (const path of ['/api/v1/auth/refresh', '/api/v1/auth/logout'])
     assert.equal(ok('iam', 'POST', path).error, 'INVALID_REQUEST', path);
   assert.equal(ok('iam', 'GET', '/api/v1/auth/csrf').error, 'INVALID_REQUEST');
 });
@@ -94,4 +89,37 @@ test('C02/C06: the per-mount capability uses the catalogue, the mount signal and
     http.request({ method: 'GET', path: '/api/v1/auth/staff' }),
     /CANCELLED/,
   );
+});
+
+test('C06: HU-CLN-003 Clinical Analytics is a catalogued protected read', () => {
+  const dashboard = ok(
+    'clinical',
+    'GET',
+    '/api/v1/clinical-analytics/dashboard',
+  );
+  assert.equal(dashboard.ok, true);
+  assert.equal(dashboard.operation.public, false);
+  assert.equal(dashboard.operation.idempotent, false);
+  assert.equal(
+    ok('clinical', 'POST', '/api/v1/clinical-analytics/dashboard').error,
+    'INVALID_REQUEST',
+  );
+});
+
+test('C06: the IAM dentist directory (dlc-docs#164) is catalogued for portals', () => {
+  const directory = ok('appointments', 'GET', '/api/v1/auth/dentists');
+  assert.equal(directory.ok, true);
+  assert.equal(directory.operation.operationId, 'AuthListdentists');
+  assert.equal(directory.operation.public, false);
+});
+
+test('C06: the Billing pending-price read (dlc-docs#169/#170) is catalogued for portals', () => {
+  const read = ok(
+    'billing',
+    'GET',
+    '/api/v1/encounter-accounts/pending-prices',
+  );
+  assert.equal(read.ok, true);
+  assert.equal(read.operation.operationId, 'BillingListpendingpriceencounters');
+  assert.equal(read.operation.public, false);
 });

@@ -107,6 +107,7 @@ const ORDER = [
   'procedures',
   'appointments',
   'availability',
+  'clinical-assignments',
   'clinical',
   'billing',
   'sessions',
